@@ -11,7 +11,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 # ── Настройки ───────────────────────────────────────────────
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
 MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 МБ
-SOFFICE_PATH = r'C:\Program Files\LibreOffice\program\soffice.exe'
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
@@ -132,12 +131,12 @@ async def handle_document(message: Message):
                 input_path.write_bytes(await resp.read())
 
         # Конвертация через LibreOffice
-        result = subprocess.run(
-            [SOFFICE_PATH, '--headless', '--convert-to', 'pdf', '--outdir', str(temp_dir), str(input_path)],
-            capture_output=True,
-            text=True,
-            check=True
-        )
+      result = subprocess.run(
+    ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(temp_dir), str(input_path)],
+    capture_output=True,
+    text=True,
+    check=True
+)
 
         # Отправляем PDF
         if lang == 'pl':
