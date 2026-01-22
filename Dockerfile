@@ -15,5 +15,8 @@ RUN apt-get update && apt-get install -y \
     libreoffice \
     && rm -rf /var/lib/apt/lists/*
 
+# Force rebuild on code change (dummy line)
+RUN echo "Rebuild trigger: 2026-01-23"
+
 # Запускаем бота
 CMD ["python", "bot.py"]
