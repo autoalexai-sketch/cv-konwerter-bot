@@ -3,17 +3,19 @@ import asyncio
 import aiohttp
 import subprocess
 from pathlib import Path
-from aiogram import Bot, Dispatcher
-from aiogram.types import Message, BufferedInputFile
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiohttp import web
 
 # ── Настройки ───────────────────────────────────────────────
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
-MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 МБ
-
+MAX_FILE_SIZE = 15 * 1024 * 1024 # 15 МБ
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
+WEBHOOK_PATH = '/webhook'
+WEBAPP_HOST = '0.0.0.0'  # for Fly.io
+WEBAPP_PORT = int(os.environ.get("PORT", 8080))  # Fly.io uses PORT env
 
 # Поддерживаемые языки (Telegram language_code → наш код)
 LANG_MAP = {
@@ -186,7 +188,22 @@ async def process_premium(callback):
 # ── Запуск ────────────────────────────────────────────────
 async def main():
     print("Бот запущен (LibreOffice)...")
-    await dp.start_polling(bot)
+
+    app = web.Application()
+    app.router.add_post(WEBHOOK_PATH, dp.handle_webhook)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, WEBAPP_HOST, WEBAPP_PORT)
+    await site.start()
+
+    # Set webhook
+    webhook_url = f"https://cv-poland-project.fly.dev{WEBHOOK_PATH}"
+    await bot.set_webhook(webhook_url)
+
+    try:
+        await asyncio.Event().wait()  # Run forever
+    finally:
+        await runner.cleanup()
 
 if __name__ == "__main__":
     asyncio.run(main())
