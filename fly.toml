@@ -23,3 +23,7 @@ primary_region = 'ams'
 
 [processes]
 app = "python bot.py"
+
+auto_stop_machines = false
+auto_start_machines = true
+min_machines_running = 1
