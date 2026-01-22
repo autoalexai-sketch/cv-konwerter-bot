@@ -11,6 +11,7 @@ from aiohttp import web
 # ── Настройки ───────────────────────────────────────────────
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
 MAX_FILE_SIZE = 15 * 1024 * 1024 # 15 МБ
+SOFFICE_PATH = "soffice"  # для Linux, для Windows: r'C:\Program Files\LibreOffice\program\soffice.exe'
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 WEBHOOK_PATH = '/webhook'
