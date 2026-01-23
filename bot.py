@@ -125,6 +125,7 @@ async def handle_document(message: Message):
         temp_dir.mkdir(exist_ok=True)
         input_path = temp_dir / f"{file.file_id}.docx"
         output_path = temp_dir / f"{file.file_id}.pdf"
+
         async with aiohttp.ClientSession() as session:
             async with session.get(file_path) as resp:
                 if resp.status != 200:
@@ -168,7 +169,6 @@ async def handle_document(message: Message):
         else:
             err_msg = "😅 Something went wrong... Try again later."
         await message.reply(err_msg)
-
 # ── Premium ────────────────────────────────────────────────
 @dp.callback_query(lambda c: c.data == "buy_premium")
 async def process_premium(callback):
