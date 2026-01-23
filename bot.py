@@ -194,12 +194,13 @@ async def process_premium(callback):
 
 # ── Запуск ────────────────────────────────────────────────
 async def main():
-    import shutil
+    # Очистка временной папки при старте
     temp_dir = Path("temp")
     if temp_dir.exists():
         shutil.rmtree(temp_dir, ignore_errors=True)
+        print("Временная папка очищена")
     temp_dir.mkdir(exist_ok=True)
-    print("Временная папка очищена")
+
     print("Бот запущен (LibreOffice)...")
 
     app = web.Application()
@@ -228,14 +229,27 @@ async def main():
         print(f"Ошибка установки webhook: {type(e).__name__} → {e}")
         raise
 
-    print("Бот полностью запущен и ожидает запросов...")
+    # Держим процесс живым + graceful shutdown для Fly.io
+    loop = asyncio.get_running_loop()
+
+    def handle_shutdown():
+        print("Получен сигнал остановки от Fly.io (SIGINT/SIGTERM)")
+        asyncio.create_task(runner.cleanup())
+        loop.stop()
+
+    loop.add_signal_handler(asyncio.signal.SIGINT, handle_shutdown)
+    loop.add_signal_handler(asyncio.signal.SIGTERM, handle_shutdown)
+
+    print("Бот полностью запущен и ожидает запросов... (готов к graceful shutdown)")
 
     try:
         await asyncio.Event().wait()
+    except asyncio.CancelledError:
+        print("asyncio.Event() отменён — нормальный shutdown")
     finally:
+        print("Очистка ресурсов...")
         await runner.cleanup()
-        
+
+
 if __name__ == "__main__":
     asyncio.run(main())
-
-# Для теста, что код обновился
