@@ -1,5 +1,5 @@
 # Используем официальный Python 3.14 slim (лёгкий образ)
-FROM python:3.14-slim
+FROM python:3.14
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
