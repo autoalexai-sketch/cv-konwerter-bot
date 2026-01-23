@@ -2,26 +2,28 @@
 import asyncio
 import aiohttp
 import subprocess
+import shutil               # ← добавлен здесь, в начале
+import os
+
 from pathlib import Path
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiohttp import web
-import os
 
-# ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-# ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+# Правильный импорт для webhook в aiogram 3.x — ТОЛЬКО ОДНА строка!
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
 # ── Настройки ───────────────────────────────────────────────
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
-MAX_FILE_SIZE = 15 * 1024 * 1024 # 15 МБ
-SOFFICE_PATH = "soffice"  # для Linux, для Windows: r'C:\Program Files\LibreOffice\program\soffice.exe'
+MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 МБ
+SOFFICE_PATH = "soffice"  # для Linux (Fly.io)
+
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 WEBHOOK_PATH = '/webhook'
-WEBAPP_HOST = '0.0.0.0'  # for Fly.io
-WEBAPP_PORT = int(os.environ.get("PORT", 8080))  # Fly.io uses PORT env
+WEBAPP_HOST = '0.0.0.0'  # для Fly.io
+WEBAPP_PORT = int(os.environ.get("PORT", 8080))  # Fly.io использует переменную PORT
 
 # Поддерживаемые языки (Telegram language_code → наш код)
 LANG_MAP = {
@@ -192,6 +194,12 @@ async def process_premium(callback):
 
 # ── Запуск ────────────────────────────────────────────────
 async def main():
+    import shutil
+    temp_dir = Path("temp")
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    temp_dir.mkdir(exist_ok=True)
+    print("Временная папка очищена")
     print("Бот запущен (LibreOffice)...")
 
     app = web.Application()
@@ -231,6 +239,3 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 # Для теста, что код обновился
-print("New code deployed - aiogram 3 webhook fixed - 2026-01-23")
-
-# Триггер пересборки Dockerfile - aiogram 3 fix
