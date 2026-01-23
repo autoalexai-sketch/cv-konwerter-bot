@@ -169,6 +169,7 @@ async def handle_document(message: Message):
         else:
             err_msg = "😅 Something went wrong... Try again later."
         await message.reply(err_msg)
+        
 # ── Premium ────────────────────────────────────────────────
 @dp.callback_query(lambda c: c.data == "buy_premium")
 async def process_premium(callback):
