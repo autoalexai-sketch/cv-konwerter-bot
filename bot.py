@@ -208,4 +208,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+print("New code deployed - import os added - 2026-01-23 03:45")  # <--- эта строка для теста
 # Force rebuild trigger 2026-01-23 03:30
