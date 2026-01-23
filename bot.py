@@ -232,3 +232,5 @@ if __name__ == "__main__":
 
 # Для теста, что код обновился
 print("New code deployed - aiogram 3 webhook fixed - 2026-01-23")
+
+# Force full rebuild 2026-01-23 11:30 — aiogram 3 webhook fix
