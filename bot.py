@@ -191,10 +191,6 @@ async def process_premium(callback):
     await callback.message.answer(text)
 
 # ── Запуск ────────────────────────────────────────────────
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-
-# ... (все остальные импорты остаются выше)
-
 async def main():
     print("Бот запущен (LibreOffice)...")
 
