@@ -9,6 +9,10 @@ from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, Inli
 from aiohttp import web
 import os
 
+# ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+# ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+
 # ── Настройки ───────────────────────────────────────────────
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
 MAX_FILE_SIZE = 15 * 1024 * 1024 # 15 МБ
