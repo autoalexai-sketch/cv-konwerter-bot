@@ -226,6 +226,7 @@ async def main():
         await asyncio.Event().wait()
     finally:
         await runner.cleanup()
+        
 if __name__ == "__main__":
     asyncio.run(main())
 
