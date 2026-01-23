@@ -121,12 +121,10 @@ async def handle_document(message: Message):
         # Скачиваем файл
         file = await bot.get_file(doc.file_id)
         file_path = f"https://api.telegram.org/file/bot{API_TOKEN}/{file.file_path}"
-
         temp_dir = Path("temp")
         temp_dir.mkdir(exist_ok=True)
         input_path = temp_dir / f"{file.file_id}.docx"
         output_path = temp_dir / f"{file.file_id}.pdf"
-
         async with aiohttp.ClientSession() as session:
             async with session.get(file_path) as resp:
                 if resp.status != 200:
@@ -134,12 +132,12 @@ async def handle_document(message: Message):
                 input_path.write_bytes(await resp.read())
 
         # Конвертация через LibreOffice
-      result = subprocess.run(
-    ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(temp_dir), str(input_path)],
-    capture_output=True,
-    text=True,
-    check=True
-)
+        result = subprocess.run(
+            ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(temp_dir), str(input_path)],
+            capture_output=True,
+            text=True,
+            check=True
+        )
 
         # Отправляем PDF
         if lang == 'pl':
