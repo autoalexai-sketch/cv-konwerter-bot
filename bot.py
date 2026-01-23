@@ -191,26 +191,45 @@ async def process_premium(callback):
     await callback.message.answer(text)
 
 # ── Запуск ────────────────────────────────────────────────
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+
+# ... (все остальные импорты остаются выше)
+
 async def main():
     print("Бот запущен (LibreOffice)...")
 
     app = web.Application()
-    app.router.add_post(WEBHOOK_PATH, dp.handle_webhook)
+
+    # Правильный обработчик webhook для aiogram 3.x
+    webhook_handler = SimpleRequestHandler(
+        dispatcher=dp,
+        bot=bot,
+    )
+    webhook_handler.register(app, path=WEBHOOK_PATH)
+
+    # Обязательная настройка приложения для aiogram 3
+    setup_application(app, dp, bot=bot)
+
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, WEBAPP_HOST, WEBAPP_PORT)
     await site.start()
 
-    # Set webhook
+    print(f"Сервер запущен на {WEBAPP_HOST}:{WEBAPP_PORT}")
+    print("Ожидание входящих запросов...")
+
+    # Устанавливаем webhook
     webhook_url = f"https://cv-poland-project.fly.dev{WEBHOOK_PATH}"
     await bot.set_webhook(webhook_url)
+    print(f"Webhook установлен на: {webhook_url}")
 
     try:
-        await asyncio.Event().wait()  # Run forever
+        await asyncio.Event().wait()  # Держим процесс живым бесконечно
     finally:
         await runner.cleanup()
 
 if __name__ == "__main__":
     asyncio.run(main())
-print("New code deployed - import os added - 2026-01-23 03:45")  # <--- эта строка для теста
-# Force rebuild trigger 2026-01-23 03:30
+
+# Для теста, что код обновился
+print("New code deployed - aiogram 3 webhook fixed - 2026-01-23")
