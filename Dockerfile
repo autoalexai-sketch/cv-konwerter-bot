@@ -1,5 +1,5 @@
 # Используем официальный Python 3.14 
-FROM python:3.14
+FROM python:3.12-bullseye
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
