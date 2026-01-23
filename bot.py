@@ -196,14 +196,12 @@ async def main():
 
     app = web.Application()
 
-    # Правильный обработчик webhook для aiogram 3.x
     webhook_handler = SimpleRequestHandler(
         dispatcher=dp,
         bot=bot,
     )
     webhook_handler.register(app, path=WEBHOOK_PATH)
 
-    # Обязательная настройка приложения для aiogram 3
     setup_application(app, dp, bot=bot)
 
     runner = web.AppRunner(app)
@@ -214,16 +212,20 @@ async def main():
     print(f"Сервер запущен на {WEBAPP_HOST}:{WEBAPP_PORT}")
     print("Ожидание входящих запросов...")
 
-    # Устанавливаем webhook
     webhook_url = f"https://cv-poland-project.fly.dev{WEBHOOK_PATH}"
-    await bot.set_webhook(webhook_url)
-    print(f"Webhook установлен на: {webhook_url}")
+    try:
+        await bot.set_webhook(webhook_url)
+        print(f"Webhook успешно установлен: {webhook_url}")
+    except Exception as e:
+        print(f"Ошибка установки webhook: {type(e).__name__} → {e}")
+        raise
+
+    print("Бот полностью запущен и ожидает запросов...")
 
     try:
-        await asyncio.Event().wait()  # Держим процесс живым бесконечно
+        await asyncio.Event().wait()
     finally:
         await runner.cleanup()
-
 if __name__ == "__main__":
     asyncio.run(main())
 
