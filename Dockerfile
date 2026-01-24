@@ -10,13 +10,20 @@ COPY . .
 # Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Устанавливаем LibreOffice (для конвертации)
+# Устанавливаем LibreOffice (для конвертации) + необходимые шрифты
 RUN apt-get update && apt-get install -y \
-    libreoffice \
+    libreoffice-writer \
+    libreoffice-core \
+    fonts-liberation \
+    fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
 
+# Создаем директорию для кеша LibreOffice
+RUN mkdir -p /tmp/.libreoffice && chmod 777 /tmp/.libreoffice
+ENV HOME=/tmp
+
 # Force rebuild on code change (dummy line)
-RUN echo "Rebuild trigger: 2026-01-23"
+RUN echo "Rebuild trigger: 2026-01-24-fix"
 
 # Запускаем бота
 CMD ["python", "bot.py"]

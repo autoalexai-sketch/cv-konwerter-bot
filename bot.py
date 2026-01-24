@@ -2,8 +2,9 @@
 import asyncio
 import aiohttp
 import subprocess
-import shutil               # ← добавлен здесь, в начале
+import shutil
 import os
+import signal
 
 from pathlib import Path
 from aiogram import Bot, Dispatcher, types
@@ -134,18 +135,20 @@ async def handle_document(message: Message):
         output_path = temp_dir / f"{file.file_id}.pdf"
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(file_path) as resp:
+            async with session.get(file_path, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                 if resp.status != 200:
-                    raise Exception("Download failed")
+                    raise Exception(f"Download failed with status {resp.status}")
                 input_path.write_bytes(await resp.read())
 
-        # Конвертация через LibreOffice
+        # Конвертация через LibreOffice с таймаутом
         result = subprocess.run(
             ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(temp_dir), str(input_path)],
             capture_output=True,
             text=True,
+            timeout=30,  # 30 секунд таймаут
             check=True
         )
+        print(f"LibreOffice output: {result.stdout}")
 
         # Отправляем PDF
         if lang == 'pl':
@@ -167,8 +170,22 @@ async def handle_document(message: Message):
         input_path.unlink(missing_ok=True)
         output_path.unlink(missing_ok=True)
 
+    except subprocess.TimeoutExpired:
+        print(f"Таймаут конвертации для файла {filename}")
+        if lang == 'pl':
+            err_msg = "😅 Konwersja trwa zbyt długo. Spróbuj mniejszego pliku."
+        elif lang == 'uk':
+            err_msg = "😅 Конвертація триває занадто довго. Спробуй менший файл."
+        else:
+            err_msg = "😅 Conversion timeout. Try a smaller file."
+        await message.reply(err_msg)
+        # Очистка
+        input_path.unlink(missing_ok=True)
+        output_path.unlink(missing_ok=True)
     except Exception as e:
-        print(f"Ошибка: {type(e).__name__} → {e}")
+        print(f"Ошибка конвертации: {type(e).__name__} → {e}")
+        import traceback
+        traceback.print_exc()
         if lang == 'pl':
             err_msg = "😅 Coś poszło nie tak... Spróbuj później."
         elif lang == 'uk':
@@ -176,6 +193,9 @@ async def handle_document(message: Message):
         else:
             err_msg = "😅 Something went wrong... Try again later."
         await message.reply(err_msg)
+        # Очистка
+        input_path.unlink(missing_ok=True)
+        output_path.unlink(missing_ok=True)
         
 # ── Premium ────────────────────────────────────────────────
 @dp.callback_query(lambda c: c.data == "buy_premium")
@@ -204,6 +224,13 @@ async def main():
     print("Бот запущен (LibreOffice)...")
 
     app = web.Application()
+    
+    # Добавляем health check endpoint для Fly.io
+    async def health_check(request):
+        return web.Response(text="OK", status=200)
+    
+    app.router.add_get('/health', health_check)
+    app.router.add_get('/', health_check)
 
     webhook_handler = SimpleRequestHandler(
         dispatcher=dp,
@@ -221,34 +248,58 @@ async def main():
     print(f"Сервер запущен на {WEBAPP_HOST}:{WEBAPP_PORT}")
     print("Ожидание входящих запросов...")
 
-    webhook_url = f"https://cv-poland-project.fly.dev{WEBHOOK_PATH}"
+    # Получаем URL приложения из переменной окружения или используем дефолтный
+    app_url = os.environ.get("FLY_APP_NAME")
+    if app_url:
+        webhook_url = f"https://{app_url}.fly.dev{WEBHOOK_PATH}"
+    else:
+        webhook_url = f"https://cv-poland-project.fly.dev{WEBHOOK_PATH}"
+    
     try:
-        await bot.set_webhook(webhook_url)
+        # Удаляем старый webhook
+        await bot.delete_webhook(drop_pending_updates=True)
+        print("Старый webhook удален")
+        
+        # Устанавливаем новый webhook
+        await bot.set_webhook(
+            url=webhook_url,
+            allowed_updates=["message", "callback_query"],
+            drop_pending_updates=True
+        )
         print(f"Webhook успешно установлен: {webhook_url}")
+        
+        # Проверяем webhook
+        webhook_info = await bot.get_webhook_info()
+        print(f"Webhook info: {webhook_info}")
     except Exception as e:
         print(f"Ошибка установки webhook: {type(e).__name__} → {e}")
         raise
 
     # Держим процесс живым + graceful shutdown для Fly.io
-    loop = asyncio.get_running_loop()
-
-    def handle_shutdown():
-        print("Получен сигнал остановки от Fly.io (SIGINT/SIGTERM)")
-        asyncio.create_task(runner.cleanup())
-        loop.stop()
-
-    loop.add_signal_handler(asyncio.signal.SIGINT, handle_shutdown)
-    loop.add_signal_handler(asyncio.signal.SIGTERM, handle_shutdown)
-
-    print("Бот полностью запущен и ожидает запросов... (готов к graceful shutdown)")
-
+    print("Бот полностью запущен и ожидает запросов...")
+    
+    # Создаем событие для graceful shutdown
+    shutdown_event = asyncio.Event()
+    
+    def handle_shutdown(signum, frame):
+        print(f"Получен сигнал остановки: {signum}")
+        shutdown_event.set()
+    
+    # Регистрируем обработчики сигналов
+    signal.signal(signal.SIGINT, handle_shutdown)
+    signal.signal(signal.SIGTERM, handle_shutdown)
+    
     try:
-        await asyncio.Event().wait()
+        # Ждем сигнала остановки
+        await shutdown_event.wait()
     except asyncio.CancelledError:
-        print("asyncio.Event() отменён — нормальный shutdown")
+        print("asyncio отменён — нормальный shutdown")
     finally:
-        print("Очистка ресурсов...")
+        print("Начинаем graceful shutdown...")
+        await bot.delete_webhook()
         await runner.cleanup()
+        await bot.session.close()
+        print("Ресурсы очищены")
 
 
 if __name__ == "__main__":
