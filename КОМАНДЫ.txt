@@ -1,0 +1,45 @@
+# КОМАНДЫ ДЛЯ КОПИРОВАНИЯ
+
+## 1. Перейти в папку проекта
+cd "C:\Users\HP\OneDrive\Рабочий стол\cv-poland-project"
+
+## 2. Остановить старые машины
+flyctl machine stop 8d624fed6e3d8 -a cv-poland-project
+flyctl machine stop d8d4523f297dd8 -a cv-poland-project
+
+## 3. Деплой новой версии
+flyctl deploy --remote-only -a cv-poland-project
+
+## 4. Смотреть логи (в другом окне)
+flyctl logs -a cv-poland-project -f
+
+## 5. Проверить статус
+flyctl status -a cv-poland-project
+
+## 6. Проверить health check (в браузере)
+https://cv-poland-project.fly.dev/health
+
+## 7. Переустановить webhook (если нужно)
+curl "https://api.telegram.org/bot8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo/deleteWebhook?drop_pending_updates=true"
+
+curl "https://api.telegram.org/bot8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo/setWebhook?url=https://cv-poland-project.fly.dev/webhook"
+
+## 8. Проверить webhook info
+curl "https://api.telegram.org/bot8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo/getWebhookInfo"
+
+## ПОЛЕЗНЫЕ КОМАНДЫ
+
+# Список машин
+flyctl machine list -a cv-poland-project
+
+# Перезапуск машины
+flyctl machine restart <machine-id> -a cv-poland-project
+
+# SSH в контейнер
+flyctl ssh console -a cv-poland-project
+
+# Проверить health изнутри контейнера
+curl http://localhost:8080/health
+
+# Дашборд Fly.io
+flyctl dashboard -a cv-poland-project
