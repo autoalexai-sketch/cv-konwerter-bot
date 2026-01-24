@@ -13,6 +13,15 @@ primary_region = 'ams'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
+  
+  [http_service.checks]
+    [http_service.checks.alive]
+      type = "http"
+      method = "GET"
+      path = "/health"
+      interval = "15s"
+      timeout = "10s"
+      grace_period = "30s"
 
 [[vm]]
   memory = '1gb'

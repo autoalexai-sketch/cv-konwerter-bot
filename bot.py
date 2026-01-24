@@ -225,18 +225,40 @@ async def main():
 
     app = web.Application()
     
+    # Middleware для логирования всех запросов
+    @web.middleware
+    async def logging_middleware(request, handler):
+        print(f"📥 Входящий запрос: {request.method} {request.path} от {request.remote}")
+        try:
+            response = await handler(request)
+            print(f"📤 Ответ: {response.status}")
+            return response
+        except Exception as e:
+            print(f"❌ Ошибка обработки запроса: {e}")
+            raise
+    
+    app.middlewares.append(logging_middleware)
+    
     # Добавляем health check endpoint для Fly.io
     async def health_check(request):
+        print(f"Health check запрос от {request.remote}")
         return web.Response(text="OK", status=200)
     
+    # Root endpoint для проверки
+    async def root_handler(request):
+        print(f"Root запрос от {request.remote}")
+        return web.Response(text="CV Konwerter Bot is running!", status=200)
+    
     app.router.add_get('/health', health_check)
-    app.router.add_get('/', health_check)
+    app.router.add_get('/', root_handler)
 
     webhook_handler = SimpleRequestHandler(
         dispatcher=dp,
         bot=bot,
     )
     webhook_handler.register(app, path=WEBHOOK_PATH)
+    
+    print(f"Webhook handler зарегистрирован на {WEBHOOK_PATH}")
 
     setup_application(app, dp, bot=bot)
 
