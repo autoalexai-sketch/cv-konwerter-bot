@@ -241,16 +241,22 @@ async def main():
     
     # Добавляем health check endpoint для Fly.io
     async def health_check(request):
-        print(f"Health check запрос от {request.remote}")
-        return web.Response(text="OK", status=200)
+        print(f"✅ Health check запрос от {request.remote}")
+        return web.Response(text="OK\n", status=200, content_type='text/plain')
     
     # Root endpoint для проверки
     async def root_handler(request):
-        print(f"Root запрос от {request.remote}")
-        return web.Response(text="CV Konwerter Bot is running!", status=200)
+        print(f"✅ Root запрос от {request.remote}")
+        return web.Response(
+            text="CV Konwerter Bot is running!\n", 
+            status=200,
+            content_type='text/plain'
+        )
     
     app.router.add_get('/health', health_check)
     app.router.add_get('/', root_handler)
+    
+    print("✅ Endpoints registered: / and /health")
 
     webhook_handler = SimpleRequestHandler(
         dispatcher=dp,
@@ -267,8 +273,21 @@ async def main():
     site = web.TCPSite(runner, WEBAPP_HOST, WEBAPP_PORT)
     await site.start()
 
-    print(f"Сервер запущен на {WEBAPP_HOST}:{WEBAPP_PORT}")
+    print(f"✅ Сервер УСПЕШНО запущен на {WEBAPP_HOST}:{WEBAPP_PORT}")
+    print(f"✅ Listening on all interfaces")
     print("Ожидание входящих запросов...")
+    
+    # Тестируем что сервер действительно отвечает
+    try:
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f'http://localhost:{WEBAPP_PORT}/health') as resp:
+                if resp.status == 200:
+                    print("✅ Самопроверка health endpoint: OK")
+                else:
+                    print(f"⚠️ Самопроверка health endpoint: {resp.status}")
+    except Exception as e:
+        print(f"⚠️ Ошибка самопроверки: {e}")
 
     # Получаем URL приложения из переменной окружения или используем дефолтный
     app_url = os.environ.get("FLY_APP_NAME")
