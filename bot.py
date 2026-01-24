@@ -297,30 +297,29 @@ async def main():
         print(f"Ошибка установки webhook: {type(e).__name__} → {e}")
         raise
 
-    # Держим процесс живым + graceful shutdown для Fly.io
+    # Держим процесс живым - простое ожидание
     print("Бот полностью запущен и ожидает запросов...")
     
-    # Создаем событие для graceful shutdown
-    shutdown_event = asyncio.Event()
-    
-    def handle_shutdown(signum, frame):
-        print(f"Получен сигнал остановки: {signum}")
-        shutdown_event.set()
-    
-    # Регистрируем обработчики сигналов
-    signal.signal(signal.SIGINT, handle_shutdown)
-    signal.signal(signal.SIGTERM, handle_shutdown)
-    
     try:
-        # Ждем сигнала остановки
-        await shutdown_event.wait()
-    except asyncio.CancelledError:
-        print("asyncio отменён — нормальный shutdown")
+        # Бесконечное ожидание (будет прервано при остановке контейнера)
+        while True:
+            await asyncio.sleep(3600)  # Спим по часу
+    except (KeyboardInterrupt, SystemExit, asyncio.CancelledError):
+        print("Получен сигнал остановки")
     finally:
         print("Начинаем graceful shutdown...")
-        await bot.delete_webhook()
-        await runner.cleanup()
-        await bot.session.close()
+        try:
+            await bot.delete_webhook()
+        except Exception as e:
+            print(f"Ошибка удаления webhook: {e}")
+        try:
+            await runner.cleanup()
+        except Exception as e:
+            print(f"Ошибка cleanup: {e}")
+        try:
+            await bot.session.close()
+        except Exception as e:
+            print(f"Ошибка закрытия сессии: {e}")
         print("Ресурсы очищены")
 
 

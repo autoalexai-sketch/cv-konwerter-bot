@@ -23,7 +23,7 @@ RUN mkdir -p /tmp/.libreoffice && chmod 777 /tmp/.libreoffice
 ENV HOME=/tmp
 
 # Force rebuild on code change (dummy line)
-RUN echo "Rebuild trigger: 2026-01-24-fix"
+RUN echo "Rebuild trigger: 2026-01-24-fix-v2-signal-fixed"
 
 # Запускаем бота
 CMD ["python", "bot.py"]
