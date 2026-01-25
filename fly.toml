@@ -1,5 +1,5 @@
 # fly.toml app configuration file for cv-poland-project
-# Generated and corrected on 2026-01-23
+# Updated for new Fly.io format - 2026-01-25
 
 app = 'cv-poland-project'
 primary_region = 'ams'
@@ -12,21 +12,17 @@ primary_region = 'ams'
   auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
-  processes = ['app']
-  
-  [http_service.checks]
-    [http_service.checks.alive]
-      type = "http"
-      method = "GET"
-      path = "/health"
-      interval = "15s"
-      timeout = "10s"
-      grace_period = "30s"
 
-[[vm]]
+[[http_service.checks]]
+  interval = "15s"
+  timeout = "10s"
+  grace_period = "30s"
+  method = "GET"
+  path = "/health"
+
+[vm]
   memory = '1gb'
   cpus = 1
-  memory_mb = 1024
 
 [processes]
   app = "python bot.py"
