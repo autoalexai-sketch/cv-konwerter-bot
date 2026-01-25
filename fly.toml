@@ -1,5 +1,4 @@
-# fly.toml app configuration file for cv-poland-project
-# Updated for new Fly.io format - 2026-01-25
+# fly.toml app configuration file generated for cv-poland-project on 2026-01-25T18:28:09Z
 
 app = 'cv-poland-project'
 primary_region = 'ams'
@@ -12,6 +11,7 @@ primary_region = 'ams'
   auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
+  processes = ['app']
 
 [[http_service.checks]]
   interval = "15s"
@@ -23,6 +23,3 @@ primary_region = 'ams'
 [vm]
   memory = '1gb'
   cpus = 1
-
-[processes]
-  app = "python bot.py"
