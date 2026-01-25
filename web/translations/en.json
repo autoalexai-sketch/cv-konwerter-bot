@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "title": "CV Converter - Free DOCX → PDF",
+    "description": "Convert your CV to PDF in 2 seconds! Free, fast, no registration required."
+  },
+  "nav": {
+    "convert": "Convert",
+    "premium": "Premium",
+    "telegram": "Telegram Bot"
+  },
+  "hero": {
+    "title": "Convert CV to PDF in 2 seconds!",
+    "subtitle": "Free, fast and no registration",
+    "features": {
+      "fast": "Fast",
+      "free": "Free",
+      "secure": "Secure"
+    }
+  },
+  "convert": {
+    "title": "Convert your CV",
+    "subtitle": "Drag & drop DOCX file or click to select",
+    "upload": {
+      "drag": "Drag file here",
+      "or": "or",
+      "button": "Select DOCX file",
+      "maxSize": "Maximum size: 15 MB"
+    },
+    "button": "Convert to PDF",
+    "converting": "Converting...",
+    "success": {
+      "title": "Done! 🎉",
+      "download": "Download PDF"
+    },
+    "error": {
+      "title": "Error occurred",
+      "noFile": "Please select a file",
+      "wrongFormat": "Only .doc and .docx files allowed",
+      "tooLarge": "File is too large (max 15 MB)",
+      "conversionFailed": "Conversion failed",
+      "serverError": "Server error. Try again."
+    }
+  },
+  "premium": {
+    "title": "💎 Premium Package",
+    "subtitle": "Professional CV + Cover Letter for £9 / $11",
+    "free": {
+      "title": "🆓 Free version",
+      "features": [
+        "DOCX → PDF conversion",
+        "Unlimited files",
+        "No registration"
+      ],
+      "button": "Using now"
+    },
+    "paid": {
+      "title": "💎 Premium",
+      "badge": "Popular",
+      "price": "£9",
+      "priceNote": "one-time",
+      "features": [
+        "Everything from free version",
+        "5 professional CV templates",
+        "Cover letter template",
+        "GDPR compliant",
+        "Instant delivery via email"
+      ],
+      "button": "Buy Premium (£9)",
+      "payment": "💳 Payment via Przelewy24"
+    }
+  },
+  "telegram": {
+    "title": "📱 Using Telegram?",
+    "subtitle": "Send CV directly to our bot!",
+    "button": "Open Telegram Bot"
+  },
+  "footer": {
+    "copyright": "© 2026 CV Converter. All rights reserved.",
+    "privacy": "Your files are automatically deleted after 1 hour."
+  }
+}

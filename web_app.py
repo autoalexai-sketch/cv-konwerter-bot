@@ -11,6 +11,16 @@ app = Flask(__name__,
             template_folder='web/templates',
             static_folder='web/static')
 
+# Add translations folder to static files
+@app.route('/static/translations/<filename>')
+def serve_translation(filename):
+    """Serve translation JSON files"""
+    translations_path = Path('web/translations')
+    return send_file(
+        translations_path / filename,
+        mimetype='application/json'
+    )
+
 # Configuration
 MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 MB
 ALLOWED_EXTENSIONS = {'doc', 'docx'}

@@ -56,13 +56,13 @@ function handleFiles(files) {
         
         // Check file type
         if (!file.name.endsWith('.doc') && !file.name.endsWith('.docx')) {
-            showError('Proszę wybrać plik .doc lub .docx');
+            showError(getErrorMessage('wrongFormat'));
             return;
         }
         
         // Check file size (15MB)
         if (file.size > 15 * 1024 * 1024) {
-            showError('Plik jest za duży. Maksymalny rozmiar: 15 MB');
+            showError(getErrorMessage('tooLarge'));
             return;
         }
         
@@ -82,7 +82,7 @@ uploadForm.addEventListener('submit', async function(e) {
     
     const file = fileInput.files[0];
     if (!file) {
-        showError('Proszę wybrać plik');
+        showError(getErrorMessage('noFile'));
         return;
     }
     
@@ -90,7 +90,10 @@ uploadForm.addEventListener('submit', async function(e) {
     progressBar.classList.remove('hidden');
     progressFill.style.width = '0%';
     convertBtn.disabled = true;
-    convertBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Konwersja...';
+    
+    // Use translated "Converting..." text
+    const convertingText = getNestedTranslation(translations, 'convert.converting') || 'Konwersja...';
+    convertBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> ${convertingText}`;
     
     // Hide previous results
     result.classList.add('hidden');
@@ -130,14 +133,15 @@ uploadForm.addEventListener('submit', async function(e) {
             progressBar.classList.add('hidden');
         } else {
             const errorData = await response.json();
-            showError(errorData.error || 'Wystąpił błąd podczas konwersji');
+            showError(errorData.error || getErrorMessage('conversionFailed'));
         }
     } catch (err) {
-        showError('Nie udało się połączyć z serwerem. Spróbuj ponownie.');
+        showError(getErrorMessage('serverError'));
         console.error('Error:', err);
     } finally {
         convertBtn.disabled = false;
-        convertBtn.innerHTML = '<i class="fas fa-magic mr-2"></i> Konwertuj do PDF';
+        const buttonText = getNestedTranslation(translations, 'convert.button') || 'Konwertuj do PDF';
+        convertBtn.innerHTML = `<i class="fas fa-magic mr-2"></i> ${buttonText}`;
     }
 });
 
@@ -146,7 +150,10 @@ function showError(message) {
     error.classList.remove('hidden');
     progressBar.classList.add('hidden');
     convertBtn.disabled = false;
-    convertBtn.innerHTML = '<i class="fas fa-magic mr-2"></i> Konwertuj do PDF';
+    
+    // Use translated button text
+    const buttonText = getNestedTranslation(translations, 'convert.button') || 'Konwertuj do PDF';
+    convertBtn.innerHTML = `<i class="fas fa-magic mr-2"></i> ${buttonText}`;
 }
 
 // Smooth scroll for navigation links

@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "title": "CV Konwerter - Darmowa konwersja DOCX → PDF",
+    "description": "Konwertuj CV do PDF w 2 sekundy! Bezpłatnie, szybko, bez rejestracji."
+  },
+  "nav": {
+    "convert": "Konwersja",
+    "premium": "Premium",
+    "telegram": "Telegram Bot"
+  },
+  "hero": {
+    "title": "Konwertuj CV do PDF w 2 sekundy!",
+    "subtitle": "Bezpłatnie, szybko i bez rejestracji",
+    "features": {
+      "fast": "Szybko",
+      "free": "Darmowo",
+      "secure": "Bezpiecznie"
+    }
+  },
+  "convert": {
+    "title": "Konwertuj swoje CV",
+    "subtitle": "Przeciągnij plik DOCX lub kliknij, aby wybrać",
+    "upload": {
+      "drag": "Przeciągnij plik tutaj",
+      "or": "lub",
+      "button": "Wybierz plik DOCX",
+      "maxSize": "Maksymalny rozmiar: 15 MB"
+    },
+    "button": "Konwertuj do PDF",
+    "converting": "Konwersja...",
+    "success": {
+      "title": "Gotowe! 🎉",
+      "download": "Pobierz PDF"
+    },
+    "error": {
+      "title": "Wystąpił błąd",
+      "noFile": "Proszę wybrać plik",
+      "wrongFormat": "Dozwolone tylko pliki .doc i .docx",
+      "tooLarge": "Plik jest za duży (max 15 MB)",
+      "conversionFailed": "Nie udało się skonwertować pliku",
+      "serverError": "Błąd serwera. Spróbuj ponownie."
+    }
+  },
+  "premium": {
+    "title": "💎 Pakiet Premium",
+    "subtitle": "Profesjonalne CV + List motywacyjny za 39 zł",
+    "free": {
+      "title": "🆓 Wersja darmowa",
+      "features": [
+        "Konwersja DOCX → PDF",
+        "Bez limitu plików",
+        "Bez rejestracji"
+      ],
+      "button": "Używasz teraz"
+    },
+    "paid": {
+      "title": "💎 Premium",
+      "badge": "Popularne",
+      "price": "39 zł",
+      "priceNote": "jednorazowo",
+      "features": [
+        "Wszystko z wersji darmowej",
+        "5 profesjonalnych szablonów CV",
+        "Szablon listu motywacyjnego",
+        "Zgodność z GDPR",
+        "Natychmiastowa dostawa na email"
+      ],
+      "button": "Kup Premium (39 zł)",
+      "payment": "💳 Płatność przez Przelewy24"
+    }
+  },
+  "telegram": {
+    "title": "📱 Używasz Telegram?",
+    "subtitle": "Wyślij CV bezpośrednio do naszego bota!",
+    "button": "Otwórz Telegram Bot"
+  },
+  "footer": {
+    "copyright": "© 2026 CV Konwerter. Wszystkie prawa zastrzeżone.",
+    "privacy": "Twoje pliki są automatycznie usuwane po 1 godzinie."
+  }
+}
