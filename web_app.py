@@ -35,6 +35,10 @@ def convert_docx_to_pdf(input_path: Path, output_path: Path) -> bool:
     Конвертирует DOCX в PDF используя LibreOffice
     """
     try:
+        print(f"=== НАЧАЛО КОНВЕРТАЦИИ ===")
+        print(f"Input file: {input_path}")
+        print(f"Output file: {output_path}")
+        
         # Создаём временную директорию для вывода
         temp_dir = output_path.parent
         
@@ -53,6 +57,8 @@ def convert_docx_to_pdf(input_path: Path, output_path: Path) -> bool:
             str(input_path)
         ]
         
+        print(f"Команда: {' '.join(cmd)}")
+        
         # Запускаем конвертацию с таймаутом 30 секунд
         result = subprocess.run(
             cmd,
@@ -62,25 +68,37 @@ def convert_docx_to_pdf(input_path: Path, output_path: Path) -> bool:
             env={**os.environ, 'HOME': '/tmp'}
         )
         
+        print(f"Return code: {result.returncode}")
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")
+        
         if result.returncode != 0:
-            print(f"LibreOffice error: {result.stderr}")
+            print(f"❌ LibreOffice error: {result.stderr}")
             return False
         
         # LibreOffice создаёт файл с тем же именем, но расширением .pdf
         expected_pdf = temp_dir / f"{input_path.stem}.pdf"
         
+        print(f"Ожидаемый PDF: {expected_pdf}")
+        print(f"Файл существует: {expected_pdf.exists()}")
+        
         if expected_pdf.exists():
+            print(f"✅ PDF создан успешно!")
             if expected_pdf != output_path:
                 shutil.move(str(expected_pdf), str(output_path))
             return True
         
+        print(f"❌ PDF файл не создан")
         return False
         
     except subprocess.TimeoutExpired:
-        print("LibreOffice conversion timeout")
+        print("❌ LibreOffice conversion timeout (30 секунд)")
+        return False
+    except FileNotFoundError as e:
+        print(f"❌ soffice не найден: {e}")
         return False
     except Exception as e:
-        print(f"Conversion error: {e}")
+        print(f"❌ Conversion error: {e}")
         return False
 
 @app.route('/')
@@ -148,6 +166,39 @@ def convert():
 def health():
     """Health check endpoint"""
     return 'OK', 200
+
+@app.route('/check-libreoffice')
+def check_libreoffice():
+    """Проверка наличия LibreOffice"""
+    try:
+        result = subprocess.run(
+            ['soffice', '--version'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            return jsonify({
+                'status': 'OK',
+                'version': result.stdout.strip(),
+                'message': 'LibreOffice установлен и работает'
+            })
+        else:
+            return jsonify({
+                'status': 'ERROR',
+                'message': 'LibreOffice найден, но не отвечает',
+                'stderr': result.stderr
+            }), 500
+    except FileNotFoundError:
+        return jsonify({
+            'status': 'ERROR',
+            'message': 'LibreOffice НЕ УСТАНОВЛЕН (soffice not found)'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'ERROR',
+            'message': f'Ошибка проверки: {str(e)}'
+        }), 500
 
 @app.route('/premium')
 def premium():
