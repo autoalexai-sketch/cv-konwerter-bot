@@ -130,17 +130,35 @@ uploadForm.addEventListener('submit', async function(e) {
             const url = window.URL.createObjectURL(blob);
             console.log('✅ Object URL created:', url);
             
+            const pdfFilename = file.name.replace(/\.(doc|docx)$/i, '.pdf');
+            
             downloadLink.href = url;
-            downloadLink.download = file.name.replace(/\.(doc|docx)$/i, '.pdf');
+            downloadLink.download = pdfFilename;
             console.log('✅ Download link set:', downloadLink.href);
             console.log('✅ Download filename:', downloadLink.download);
             
-            // Trigger automatic download
-            console.log('🚀 Triggering automatic download...');
-            downloadLink.click();
-            
+            // Show result section first
             result.classList.remove('hidden');
             progressBar.classList.add('hidden');
+            
+            // Try automatic download with a small delay
+            console.log('🚀 Triggering automatic download...');
+            setTimeout(() => {
+                try {
+                    // Create a temporary link and click it
+                    const tempLink = document.createElement('a');
+                    tempLink.href = url;
+                    tempLink.download = pdfFilename;
+                    tempLink.style.display = 'none';
+                    document.body.appendChild(tempLink);
+                    tempLink.click();
+                    document.body.removeChild(tempLink);
+                    console.log('✅ Automatic download triggered successfully');
+                } catch (err) {
+                    console.error('❌ Automatic download failed:', err);
+                    console.log('ℹ️ Please click the "Download PDF" button manually');
+                }
+            }, 100);
         } else {
             console.error('❌ Response not OK:', response.status);
             const errorData = await response.json();
