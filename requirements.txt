@@ -3,3 +3,4 @@ aiohttp==3.9.5
 deep_translator==1.11.4
 flask==3.0.0
 werkzeug==3.0.1
+python-docx==1.1.0
