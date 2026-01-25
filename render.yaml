@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: cv-konwerter-web
+    env: python
+    region: frankfurt
+    plan: free
+    branch: main
+    buildCommand: "pip install -r requirements.txt && apt-get update && apt-get install -y libreoffice-writer libreoffice-core fonts-liberation fonts-dejavu"
+    startCommand: "python web_app.py"
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: PYTHON_VERSION
+        value: 3.12.0
+    healthCheckPath: /health

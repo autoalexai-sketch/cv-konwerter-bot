@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+temp/
+*.tmp
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation (не нужны в Docker)
+*.md
+DEPLOY.md
+README.md
+ИНСТРУКЦИЯ.md
+БЫСТРЫЙ_ФИКС.md
+КОМАНДЫ.txt
+КРИТИЧЕСКИЙ_ФИКС.md
+СРОЧНО.txt
+ФИНАЛЬНЫЙ_ДЕПЛОЙ.md
+LOCAL_TESTING.md
+RENDER_DEPLOY.md
+
+# Fly.io (не нужны для Render)
+.fly/
+fly.toml
+Dockerfile
+
+# Uploads and outputs
+web/static/uploads/
+uploads/
+outputs/
+
+# Environment variables
+.env
+.env.local
+
+# Bot script (не нужен для веб-приложения)
+bot.py
+app.py
