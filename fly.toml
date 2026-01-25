@@ -1,6 +1,6 @@
 # fly.toml app configuration file generated for cv-poland-project on 2026-01-25T18:28:09Z
 
-app = 'cv-poland-project'
+app = 'cv-konwerter-bot'
 primary_region = 'ams'
 
 [build]
