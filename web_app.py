@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, send_file, jsonify, session, redirect, url_for
 import os
 import subprocess
 from pathlib import Path
@@ -7,10 +7,32 @@ import tempfile
 import shutil
 from datetime import datetime
 import sys
+import json
+
+# Import database models
+from models import db, User, CV, Payment
+from email_service import mail, init_mail, send_premium_cv
+from templates_cv.cv_generator import CVGenerator
 
 app = Flask(__name__, 
             template_folder='web/templates',
             static_folder='web/static')
+
+# Configuration
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///cv_konwerter.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize extensions
+db.init_app(app)
+init_mail(app)
+
+# Create tables
+with app.app_context():
+    db.create_all()
+
+# Initialize CV Generator
+cv_generator = CVGenerator()
 
 # Add translations folder to static files
 @app.route('/static/translations/<filename>')
@@ -217,6 +239,136 @@ def premium():
         'message': 'Premium feature coming soon!',
         'price': '39 PLN'
     })
+
+@app.route('/premium/form')
+def premium_form():
+    """Форма для ввода данных CV (после оплаты)"""
+    # TODO: проверка оплаты
+    email = request.args.get('email', '')
+    return render_template('premium_form.html', email=email)
+
+@app.route('/premium/generate', methods=['POST'])
+def premium_generate():
+    """Генерация CV и отправка на email"""
+    try:
+        data = request.json
+        
+        # Валидация
+        required_fields = ['email', 'imie', 'nazwisko', 'telefon', 'miasto']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'Pole {field} jest wymagane'}), 400
+        
+        # Получение или создание пользователя
+        user = User.query.filter_by(email=data['email']).first()
+        if not user:
+            user = User(email=data['email'], is_premium=True)
+            db.session.add(user)
+            db.session.commit()
+        
+        # Сохранение CV в базу
+        cv = CV(
+            user_id=user.id,
+            imie=data['imie'],
+            nazwisko=data['nazwisko'],
+            telefon=data['telefon'],
+            miasto=data['miasto'],
+            stanowisko=data.get('stanowisko', ''),
+            o_sobie=data.get('o_sobie', ''),
+            doswiadczenie=json.dumps(data.get('doswiadczenie', [])),
+            wyksztalcenie=json.dumps(data.get('wyksztalcenie', [])),
+            umiejetnosci=json.dumps(data.get('umiejetnosci', [])),
+            jezyki=json.dumps(data.get('jezyki', [])),
+            zainteresowania=json.dumps(data.get('zainteresowania', [])),
+            template='klasyczny'
+        )
+        db.session.add(cv)
+        db.session.commit()
+        
+        # Генерация файлов
+        cv_data = cv.to_dict()
+        
+        print(f"🔄 Генерация CV для {cv_data['imie']} {cv_data['nazwisko']}...", flush=True)
+        cv_path = cv_generator.generate_klasyczny(cv_data)
+        print(f"✅ CV сгенерировано: {cv_path}", flush=True)
+        
+        print(f"🔄 Генерация List motywacyjny...", flush=True)
+        letter_path = cv_generator.generate_list_motywacyjny({}, cv_data)
+        print(f"✅ List motywacyjny сгенерован: {letter_path}", flush=True)
+        
+        # Отправка на email
+        user_name = f"{cv_data['imie']} {cv_data['nazwisko']}"
+        print(f"📧 Отправка email на {cv_data['email']}...", flush=True)
+        
+        email_sent = send_premium_cv(
+            recipient_email=cv_data['email'],
+            cv_path=str(cv_path),
+            letter_path=str(letter_path),
+            user_name=user_name
+        )
+        
+        if email_sent:
+            print(f"✅ Email отправлен успешно!", flush=True)
+            return jsonify({
+                'success': True,
+                'message': 'CV wygenerowane i wysłane na email!',
+                'email': cv_data['email']
+            })
+        else:
+            print(f"⚠️ Email не отправлен, но файлы готовы", flush=True)
+            # Даже если email не отправился, даём ссылки на скачивание
+            return jsonify({
+                'success': True,
+                'message': 'CV wygenerowane! (Email może dotrzeć później)',
+                'cv_path': cv_path.name,
+                'letter_path': letter_path.name
+            })
+    
+    except Exception as e:
+        print(f"❌ Error generating CV: {e}", flush=True)
+        return jsonify({'error': 'Wystąpił błąd podczas generowania CV'}), 500
+
+@app.route('/premium/mock-payment', methods=['POST'])
+def mock_payment():
+    """Mock оплаты для тестирования (УБРАТЬ В ПРОДАКШЕНЕ!)"""
+    try:
+        data = request.json
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': 'Email jest wymagany'}), 400
+        
+        # Создание пользователя
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            user = User(email=email, is_premium=True)
+            db.session.add(user)
+        else:
+            user.is_premium = True
+        
+        # Создание mock платежа
+        payment = Payment(
+            user_id=user.id,
+            session_id=f"mock_{datetime.utcnow().timestamp()}",
+            order_id=f"ORDER_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            amount=3900,
+            status='completed',
+            completed_at=datetime.utcnow()
+        )
+        db.session.add(payment)
+        db.session.commit()
+        
+        print(f"✅ Mock payment created for {email}", flush=True)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Płatność zakończona sukcesem (TEST)',
+            'redirect_url': f'/premium/form?email={email}'
+        })
+    
+    except Exception as e:
+        print(f"❌ Mock payment error: {e}", flush=True)
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium CV Generator - cv-konwerter.pl</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .step { display: none; }
+        .step.active { display: block; }
+        .progress-bar { transition: width 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-100 to-blue-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-purple-800 mb-2">
+                💎 Premium CV Generator
+            </h1>
+            <p class="text-gray-600">Wypełnij formularz i otrzymaj profesjonalne CV na email</p>
+            <p class="text-sm text-gray-500 mt-2">Email: <strong>{{ email }}</strong></p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="max-w-4xl mx-auto mb-8">
+            <div class="bg-gray-200 rounded-full h-3">
+                <div id="progressBar" class="progress-bar bg-purple-600 h-3 rounded-full" style="width: 20%"></div>
+            </div>
+            <div class="flex justify-between mt-2 text-sm text-gray-600">
+                <span>Krok <span id="currentStep">1</span>/5</span>
+                <span><span id="progressPercent">20</span>%</span>
+            </div>
+        </div>
+
+        <!-- Form Container -->
+        <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
+            <form id="cvForm">
+                <!-- Step 1: Dane osobowe -->
+                <div class="step active" id="step1">
+                    <h2 class="text-2xl font-bold text-purple-800 mb-6">
+                        <i class="fas fa-user"></i> Dane osobowe
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 font-semibold mb-2">Imię *</label>
+                            <input type="text" name="imie" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                                   placeholder="Jan">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-semibold mb-2">Nazwisko *</label>
+                            <input type="text" name="nazwisko" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                                   placeholder="Kowalski">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-semibold mb-2">Email *</label>
+                            <input type="email" name="email" required value="{{ email }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 bg-gray-50"
+                                   readonly>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-semibold mb-2">Telefon *</label>
+                            <input type="tel" name="telefon" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                                   placeholder="+48 123 456 789">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-semibold mb-2">Miasto *</label>
+                            <input type="text" name="miasto" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                                   placeholder="Warszawa">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-semibold mb-2">Stanowisko</label>
+                            <input type="text" name="stanowisko"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                                   placeholder="Python Developer">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <label class="block text-gray-700 font-semibold mb-2">O sobie (2-3 zdania)</label>
+                        <textarea name="o_sobie" rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                                  placeholder="Krótki opis twojej osoby, doświadczenia i celów zawodowych..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Step 2: Doświadczenie (można pominąć) -->
+                <div class="step" id="step2">
+                    <h2 class="text-2xl font-bold text-purple-800 mb-6">
+                        <i class="fas fa-briefcase"></i> Doświadczenie zawodowe
+                    </h2>
+                    <p class="text-gray-600 mb-4">Możesz dodać doświadczenie lub pominąć ten krok</p>
+                    
+                    <div id="experienceList"></div>
+                    
+                    <button type="button" onclick="addExperience()" 
+                            class="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+                        <i class="fas fa-plus"></i> Dodaj doświadczenie
+                    </button>
+                </div>
+
+                <!-- Step 3: Wykształcenie (można pominąć) -->
+                <div class="step" id="step3">
+                    <h2 class="text-2xl font-bold text-purple-800 mb-6">
+                        <i class="fas fa-graduation-cap"></i> Wykształcenie
+                    </h2>
+                    <p class="text-gray-600 mb-4">Możesz dodać wykształcenie lub pominąć ten krok</p>
+                    
+                    <div id="educationList"></div>
+                    
+                    <button type="button" onclick="addEducation()" 
+                            class="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+                        <i class="fas fa-plus"></i> Dodaj wykształcenie
+                    </button>
+                </div>
+
+                <!-- Step 4: Umiejętności i języki -->
+                <div class="step" id="step4">
+                    <h2 class="text-2xl font-bold text-purple-800 mb-6">
+                        <i class="fas fa-tools"></i> Umiejętności i języki
+                    </h2>
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2">Umiejętności (oddzielone przecinkami)</label>
+                        <input type="text" name="umiejetnosci"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                               placeholder="Python, JavaScript, SQL, Git, Docker">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 font-semibold mb-2">Języki</label>
+                        <div id="languagesList"></div>
+                        <button type="button" onclick="addLanguage()" 
+                                class="mt-2 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+                            <i class="fas fa-plus"></i> Dodaj język
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <label class="block text-gray-700 font-semibold mb-2">Zainteresowania (oddzielone przecinkami)</label>
+                        <input type="text" name="zainteresowania"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                               placeholder="Programowanie, Fotografia, Podróże">
+                    </div>
+                </div>
+
+                <!-- Step 5: Podsumowanie -->
+                <div class="step" id="step5">
+                    <h2 class="text-2xl font-bold text-purple-800 mb-6">
+                        <i class="fas fa-check-circle"></i> Podsumowanie
+                    </h2>
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                        <p class="font-semibold text-blue-800">✅ Twoje dane są gotowe!</p>
+                        <p class="text-blue-700">Kliknij "Generuj CV" aby otrzymać profesjonalne CV i list motywacyjny na email.</p>
+                    </div>
+                    
+                    <div id="summaryContent" class="space-y-4"></div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex justify-between mt-8">
+                    <button type="button" id="prevBtn" onclick="changeStep(-1)"
+                            class="bg-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-400 font-semibold"
+                            style="display: none;">
+                        <i class="fas fa-arrow-left"></i> Wstecz
+                    </button>
+                    
+                    <button type="button" id="nextBtn" onclick="changeStep(1)"
+                            class="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 font-semibold ml-auto">
+                        Dalej <i class="fas fa-arrow-right"></i>
+                    </button>
+                    
+                    <button type="submit" id="submitBtn"
+                            class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 font-semibold ml-auto"
+                            style="display: none;">
+                        <i class="fas fa-magic"></i> Generuj CV
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Loading -->
+            <div id="loading" class="hidden text-center py-8">
+                <i class="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+                <p class="text-xl font-semibold text-gray-700">Generowanie CV...</p>
+                <p class="text-gray-600">To może potrwać kilka sekund...</p>
+            </div>
+            
+            <!-- Success Message -->
+            <div id="success" class="hidden text-center py-8">
+                <i class="fas fa-check-circle text-6xl text-green-600 mb-4"></i>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">CV wygenerowane!</h3>
+                <p class="text-gray-600 mb-4">Sprawdź swoją skrzynkę email: <strong id="successEmail"></strong></p>
+                <a href="/" class="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 inline-block">
+                    Wróć na stronę główną
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStepNum = 1;
+        const totalSteps = 5;
+        
+        function showStep(n) {
+            const steps = document.querySelectorAll('.step');
+            steps.forEach(step => step.classList.remove('active'));
+            document.getElementById(`step${n}`).classList.add('active');
+            
+            // Update buttons
+            document.getElementById('prevBtn').style.display = n === 1 ? 'none' : 'block';
+            document.getElementById('nextBtn').style.display = n === totalSteps ? 'none' : 'block';
+            document.getElementById('submitBtn').style.display = n === totalSteps ? 'block' : 'none';
+            
+            // Update progress
+            const progress = (n / totalSteps) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('currentStep').textContent = n;
+            document.getElementById('progressPercent').textContent = Math.round(progress);
+            
+            // Show summary on last step
+            if (n === totalSteps) {
+                showSummary();
+            }
+        }
+        
+        function changeStep(direction) {
+            currentStepNum += direction;
+            if (currentStepNum < 1) currentStepNum = 1;
+            if (currentStepNum > totalSteps) currentStepNum = totalSteps;
+            showStep(currentStepNum);
+        }
+        
+        function addExperience() {
+            const html = `
+                <div class="experience-item bg-gray-50 p-4 rounded-lg mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" placeholder="Stanowisko" class="exp-stanowisko w-full px-4 py-2 border rounded">
+                        <input type="text" placeholder="Firma" class="exp-firma w-full px-4 py-2 border rounded">
+                        <input type="text" placeholder="Okres (np. 2020-2023)" class="exp-okres w-full px-4 py-2 border rounded">
+                        <button type="button" onclick="this.closest('.experience-item').remove()" 
+                                class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                            <i class="fas fa-trash"></i> Usuń
+                        </button>
+                    </div>
+                    <textarea placeholder="Opis obowiązków..." class="exp-opis w-full px-4 py-2 border rounded mt-2" rows="2"></textarea>
+                </div>
+            `;
+            document.getElementById('experienceList').insertAdjacentHTML('beforeend', html);
+        }
+        
+        function addEducation() {
+            const html = `
+                <div class="education-item bg-gray-50 p-4 rounded-lg mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" placeholder="Uczelnia" class="edu-uczelnia w-full px-4 py-2 border rounded">
+                        <input type="text" placeholder="Kierunek" class="edu-kierunek w-full px-4 py-2 border rounded">
+                        <input type="text" placeholder="Stopień (np. Inżynier)" class="edu-stopien w-full px-4 py-2 border rounded">
+                        <input type="text" placeholder="Okres (np. 2015-2019)" class="edu-okres w-full px-4 py-2 border rounded">
+                    </div>
+                    <button type="button" onclick="this.closest('.education-item').remove()" 
+                            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2">
+                        <i class="fas fa-trash"></i> Usuń
+                    </button>
+                </div>
+            `;
+            document.getElementById('educationList').insertAdjacentHTML('beforeend', html);
+        }
+        
+        function addLanguage() {
+            const html = `
+                <div class="language-item flex gap-4 mb-2">
+                    <input type="text" placeholder="Język" class="lang-jezyk flex-1 px-4 py-2 border rounded">
+                    <select class="lang-poziom px-4 py-2 border rounded">
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="B1">B1</option>
+                        <option value="B2" selected>B2</option>
+                        <option value="C1">C1</option>
+                        <option value="C2">C2</option>
+                        <option value="Ojczysty">Ojczysty</option>
+                    </select>
+                    <button type="button" onclick="this.closest('.language-item').remove()" 
+                            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            document.getElementById('languagesList').insertAdjacentHTML('beforeend', html);
+        }
+        
+        function showSummary() {
+            const formData = new FormData(document.getElementById('cvForm'));
+            let html = '<div class="bg-gray-50 p-4 rounded-lg">';
+            html += `<p><strong>Imię i nazwisko:</strong> ${formData.get('imie')} ${formData.get('nazwisko')}</p>`;
+            html += `<p><strong>Email:</strong> ${formData.get('email')}</p>`;
+            html += `<p><strong>Telefon:</strong> ${formData.get('telefon')}</p>`;
+            html += `<p><strong>Miasto:</strong> ${formData.get('miasto')}</p>`;
+            if (formData.get('stanowisko')) html += `<p><strong>Stanowisko:</strong> ${formData.get('stanowisko')}</p>`;
+            html += '</div>';
+            document.getElementById('summaryContent').innerHTML = html;
+        }
+        
+        // Form submission
+        document.getElementById('cvForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                email: formData.get('email'),
+                imie: formData.get('imie'),
+                nazwisko: formData.get('nazwisko'),
+                telefon: formData.get('telefon'),
+                miasto: formData.get('miasto'),
+                stanowisko: formData.get('stanowisko') || '',
+                o_sobie: formData.get('o_sobie') || '',
+                doswiadczenie: [],
+                wyksztalcenie: [],
+                umiejetnosci: formData.get('umiejetnosci') ? formData.get('umiejetnosci').split(',').map(s => s.trim()) : [],
+                jezyki: [],
+                zainteresowania: formData.get('zainteresowania') ? formData.get('zainteresowania').split(',').map(s => s.trim()) : []
+            };
+            
+            // Collect experience
+            document.querySelectorAll('.experience-item').forEach(item => {
+                const exp = {
+                    stanowisko: item.querySelector('.exp-stanowisko').value,
+                    firma: item.querySelector('.exp-firma').value,
+                    okres: item.querySelector('.exp-okres').value,
+                    opis: item.querySelector('.exp-opis').value
+                };
+                if (exp.stanowisko && exp.firma) data.doswiadczenie.push(exp);
+            });
+            
+            // Collect education
+            document.querySelectorAll('.education-item').forEach(item => {
+                const edu = {
+                    uczelnia: item.querySelector('.edu-uczelnia').value,
+                    kierunek: item.querySelector('.edu-kierunek').value,
+                    stopien: item.querySelector('.edu-stopien').value,
+                    okres: item.querySelector('.edu-okres').value
+                };
+                if (edu.uczelnia && edu.kierunek) data.wyksztalcenie.push(edu);
+            });
+            
+            // Collect languages
+            document.querySelectorAll('.language-item').forEach(item => {
+                const lang = {
+                    jezyk: item.querySelector('.lang-jezyk').value,
+                    poziom: item.querySelector('.lang-poziom').value
+                };
+                if (lang.jezyk) data.jezyki.push(lang);
+            });
+            
+            // Show loading
+            document.getElementById('cvForm').style.display = 'none';
+            document.getElementById('loading').classList.remove('hidden');
+            
+            try {
+                const response = await fetch('/premium/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('success').classList.remove('hidden');
+                    document.getElementById('successEmail').textContent = data.email;
+                } else {
+                    alert('Błąd: ' + (result.error || 'Nieznany błąd'));
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('cvForm').style.display = 'block';
+                }
+            } catch (err) {
+                alert('Błąd połączenia: ' + err.message);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('cvForm').style.display = 'block';
+            }
+        });
+        
+        // Initialize
+        showStep(1);
+    </script>
+</body>
+</html>

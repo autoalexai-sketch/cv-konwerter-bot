@@ -183,10 +183,11 @@
                     <ul class="space-y-3 mb-8" id="premiumFeatures">
                         <!-- Features will be populated by JS -->
                     </ul>
-                    <button class="w-full bg-white text-purple-600 py-4 rounded-lg font-bold text-xl hover:bg-gray-100 transition-all">
+                    <button onclick="buyPremium()" class="w-full bg-white text-purple-600 py-4 rounded-lg font-bold text-xl hover:bg-gray-100 transition-all">
                         <i class="fas fa-shopping-cart mr-2"></i> <span data-i18n="premium.paid.button">Kup Premium (39 zł)</span>
                     </button>
                     <p class="text-center text-sm mt-4 opacity-90" data-i18n="premium.paid.payment">💳 Płatność przez Przelewy24</p>
+                    <p class="text-center text-xs mt-2 opacity-75">⚠️ TEST MODE: Po kliknięciu przejdziesz do formularza CV</p>
                 </div>
             </div>
         </div>
@@ -215,5 +216,37 @@
     <!-- JavaScript -->
     <script src="/static/js/i18n.js?v=2"></script>
     <script src="/static/js/main.js?v=2"></script>
+    
+    <!-- Premium Purchase Script -->
+    <script>
+        async function buyPremium() {
+            const email = prompt('Wprowadź swój email:');
+            if (!email) return;
+            
+            if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                alert('Nieprawidłowy adres email!');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/premium/mock-payment', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email: email})
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Płatność zakończona! Przekierowanie do formularza CV...');
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert('❌ Błąd: ' + (data.error || 'Nieznany błąd'));
+                }
+            } catch (err) {
+                alert('❌ Błąd połączenia: ' + err.message);
+            }
+        }
+    </script>
 </body>
 </html>
