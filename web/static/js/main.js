@@ -123,15 +123,26 @@ uploadForm.addEventListener('submit', async function(e) {
         progressFill.style.width = '100%';
         
         if (response.ok) {
+            console.log('✅ Response OK, creating blob...');
             const blob = await response.blob();
+            console.log('✅ Blob created:', blob.size, 'bytes, type:', blob.type);
+            
             const url = window.URL.createObjectURL(blob);
+            console.log('✅ Object URL created:', url);
             
             downloadLink.href = url;
             downloadLink.download = file.name.replace(/\.(doc|docx)$/i, '.pdf');
+            console.log('✅ Download link set:', downloadLink.href);
+            console.log('✅ Download filename:', downloadLink.download);
+            
+            // Trigger automatic download
+            console.log('🚀 Triggering automatic download...');
+            downloadLink.click();
             
             result.classList.remove('hidden');
             progressBar.classList.add('hidden');
         } else {
+            console.error('❌ Response not OK:', response.status);
             const errorData = await response.json();
             showError(errorData.error || getErrorMessage('conversionFailed'));
         }
