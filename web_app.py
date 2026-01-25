@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import tempfile
 import shutil
 from datetime import datetime
+import sys
 
 app = Flask(__name__, 
             template_folder='web/templates',
@@ -35,9 +36,9 @@ def convert_docx_to_pdf(input_path: Path, output_path: Path) -> bool:
     Конвертирует DOCX в PDF используя LibreOffice
     """
     try:
-        print(f"=== НАЧАЛО КОНВЕРТАЦИИ ===")
-        print(f"Input file: {input_path}")
-        print(f"Output file: {output_path}")
+        print(f"=== НАЧАЛО КОНВЕРТАЦИИ ===", flush=True)
+        print(f"Input file: {input_path}", flush=True)
+        print(f"Output file: {output_path}", flush=True)
         
         # Создаём временную директорию для вывода
         temp_dir = output_path.parent
@@ -57,7 +58,7 @@ def convert_docx_to_pdf(input_path: Path, output_path: Path) -> bool:
             str(input_path)
         ]
         
-        print(f"Команда: {' '.join(cmd)}")
+        print(f"Команда: {' '.join(cmd)}", flush=True)
         
         # Запускаем конвертацию с таймаутом 30 секунд
         result = subprocess.run(
@@ -68,37 +69,37 @@ def convert_docx_to_pdf(input_path: Path, output_path: Path) -> bool:
             env={**os.environ, 'HOME': '/tmp'}
         )
         
-        print(f"Return code: {result.returncode}")
-        print(f"STDOUT: {result.stdout}")
-        print(f"STDERR: {result.stderr}")
+        print(f"Return code: {result.returncode}", flush=True)
+        print(f"STDOUT: {result.stdout}", flush=True)
+        print(f"STDERR: {result.stderr}", flush=True)
         
         if result.returncode != 0:
-            print(f"❌ LibreOffice error: {result.stderr}")
+            print(f"❌ LibreOffice error: {result.stderr}", flush=True)
             return False
         
         # LibreOffice создаёт файл с тем же именем, но расширением .pdf
         expected_pdf = temp_dir / f"{input_path.stem}.pdf"
         
-        print(f"Ожидаемый PDF: {expected_pdf}")
-        print(f"Файл существует: {expected_pdf.exists()}")
+        print(f"Ожидаемый PDF: {expected_pdf}", flush=True)
+        print(f"Файл существует: {expected_pdf.exists()}", flush=True)
         
         if expected_pdf.exists():
-            print(f"✅ PDF создан успешно!")
+            print(f"✅ PDF создан успешно!", flush=True)
             if expected_pdf != output_path:
                 shutil.move(str(expected_pdf), str(output_path))
             return True
         
-        print(f"❌ PDF файл не создан")
+        print(f"❌ PDF файл не создан", flush=True)
         return False
         
     except subprocess.TimeoutExpired:
-        print("❌ LibreOffice conversion timeout (30 секунд)")
+        print("❌ LibreOffice conversion timeout (30 секунд)", flush=True)
         return False
     except FileNotFoundError as e:
-        print(f"❌ soffice не найден: {e}")
+        print(f"❌ soffice не найден: {e}", flush=True)
         return False
     except Exception as e:
-        print(f"❌ Conversion error: {e}")
+        print(f"❌ Conversion error: {e}", flush=True)
         return False
 
 @app.route('/')
@@ -110,18 +111,27 @@ def index():
 def convert():
     """Конвертация DOCX в PDF"""
     
+    print("=" * 50, flush=True)
+    print("🔄 НОВЫЙ ЗАПРОС НА КОНВЕРТАЦИЮ", flush=True)
+    print("=" * 50, flush=True)
+    
     # Проверяем наличие файла
     if 'file' not in request.files:
+        print("❌ Файл не найден в запросе", flush=True)
         return jsonify({'error': 'Brak pliku'}), 400
     
     file = request.files['file']
     
     # Проверяем имя файла
     if file.filename == '':
+        print("❌ Имя файла пустое", flush=True)
         return jsonify({'error': 'Nie wybrano pliku'}), 400
+    
+    print(f"📄 Загружен файл: {file.filename}", flush=True)
     
     # Проверяем расширение
     if not allowed_file(file.filename):
+        print(f"❌ Неправильное расширение файла: {file.filename}", flush=True)
         return jsonify({'error': 'Dozwolone tylko pliki .doc i .docx'}), 400
     
     try:
