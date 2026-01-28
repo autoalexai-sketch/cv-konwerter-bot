@@ -72,6 +72,7 @@ outputs/
 .env
 .env.local
 
-# Bot script (не нужен для веб-приложения)
-bot.py
+# Bot script 
+# ВНИМАНИЕ: bot.py нужен для Fly.io deployment!
+# app.py - старый файл, можно игнорировать
 app.py
