@@ -343,12 +343,13 @@ def mock_payment():
         if not user:
             user = User(email=email, is_premium=True)
             db.session.add(user)
+            db.session.flush()  # Получаем user.id до commit
         else:
             user.is_premium = True
         
         # Создание mock платежа
         payment = Payment(
-            user_id=user.id,
+            user_id=user.id,  # Теперь user.id существует
             session_id=f"mock_{datetime.utcnow().timestamp()}",
             order_id=f"ORDER_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
             amount=3900,
@@ -356,7 +357,7 @@ def mock_payment():
             completed_at=datetime.utcnow()
         )
         db.session.add(payment)
-        db.session.commit()
+        db.session.commit()  # Сохраняем всё вместе
         
         print(f"✅ Mock payment created for {email}", flush=True)
         
