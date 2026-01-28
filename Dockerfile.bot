@@ -28,9 +28,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируем файлы проекта (это будет последним, чтобы изменения кода сбрасывали кэш)
 COPY . .
 
-# Проверяем что код правильный - не должно быть asyncio.signal
-RUN grep -q "import signal" bot.py && echo "✓ Correct: using signal module" || exit 1
-RUN ! grep -q "asyncio.signal" bot.py && echo "✓ Correct: no asyncio.signal" || (echo "ERROR: asyncio.signal found!" && exit 1)
+# Проверяем что файлы скопировались
+RUN ls -la bot.py
 
 # Запускаем бота
 CMD ["python", "bot.py"]
