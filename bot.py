@@ -294,26 +294,34 @@ async def main():
     if app_url:
         webhook_url = f"https://{app_url}.fly.dev{WEBHOOK_PATH}"
     else:
-        webhook_url = f"https://cv-poland-project.fly.dev{WEBHOOK_PATH}"
+        webhook_url = f"https://cv-konwerter-bot.fly.dev{WEBHOOK_PATH}"
     
     try:
+        print(f"🔧 Начинаем настройку webhook: {webhook_url}")
+        
         # Удаляем старый webhook
         await bot.delete_webhook(drop_pending_updates=True)
-        print("Старый webhook удален")
+        print("✅ Старый webhook удален")
         
         # Устанавливаем новый webhook
-        await bot.set_webhook(
+        result = await bot.set_webhook(
             url=webhook_url,
             allowed_updates=["message", "callback_query"],
             drop_pending_updates=True
         )
-        print(f"Webhook успешно установлен: {webhook_url}")
+        print(f"✅ Webhook установлен (result={result}): {webhook_url}")
         
         # Проверяем webhook
         webhook_info = await bot.get_webhook_info()
-        print(f"Webhook info: {webhook_info}")
+        print(f"✅ Webhook проверка: url={webhook_info.url}, pending={webhook_info.pending_update_count}")
+        
+        if not webhook_info.url:
+            raise Exception("⚠️ Webhook URL пустой после установки!")
+            
     except Exception as e:
-        print(f"Ошибка установки webhook: {type(e).__name__} → {e}")
+        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА установки webhook: {type(e).__name__} → {e}")
+        import traceback
+        traceback.print_exc()
         raise
 
     # Держим процесс живым - простое ожидание
