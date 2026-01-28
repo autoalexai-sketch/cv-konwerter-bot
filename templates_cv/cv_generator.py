@@ -35,7 +35,18 @@ class CVGenerator:
         
         # Контактные данные
         contact = doc.add_paragraph()
-        contact_text = f"📧 {data['email']}  |  📱 {data['telefon']}  |  📍 {data['miasto']}"
+        # Формируем адрес
+        address_parts = []
+        if 'adres' in data and data['adres']:
+            address_parts.append(data['adres'])
+        if 'kod_pocztowy' in data and data['kod_pocztowy']:
+            address_parts.append(data['kod_pocztowy'])
+        if 'miasto' in data and data['miasto']:
+            address_parts.append(data['miasto'])
+        
+        full_address = ', '.join(address_parts) if address_parts else data.get('miasto', '')
+        
+        contact_text = f"📧 {data['email']}  |  📱 {data['telefon']}  |  📍 {full_address}"
         contact_run = contact.add_run(contact_text)
         contact_run.font.size = Pt(11)
         contact.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -161,9 +172,174 @@ class CVGenerator:
         return output_path
     
     def generate_nowoczesny(self, data: Dict) -> Path:
-        """Сгенерировать современное CV (TODO)"""
-        # Пока использует классический шаблон
-        return self.generate_klasyczny(data)
+        """Сгенерировать современное CV с цветным дизайном"""
+        doc = Document()
+        
+        # Настройка отступов
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(0.4)
+            section.bottom_margin = Inches(0.4)
+            section.left_margin = Inches(0.6)
+            section.right_margin = Inches(0.6)
+        
+        # HEADER - Имя и Stanowisko (синий фон)
+        header = doc.add_paragraph()
+        header.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        name_run = header.add_run(f"{data['imie']} {data['nazwisko']}\n")
+        name_run.font.size = Pt(28)
+        name_run.font.bold = True
+        name_run.font.color.rgb = RGBColor(255, 255, 255)  # Белый
+        
+        if 'stanowisko' in data:
+            stanowisko_run = header.add_run(data['stanowisko'])
+            stanowisko_run.font.size = Pt(14)
+            stanowisko_run.font.color.rgb = RGBColor(230, 230, 230)
+        
+        # Добавляем фон (через shading)
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+        
+        shading_elm = OxmlElement('w:shd')
+        shading_elm.set(qn('w:fill'), '1F4E79')  # Синий фон
+        header._p.get_or_add_pPr().append(shading_elm)
+        
+        doc.add_paragraph()
+        
+        # Контактная информация (иконки + текст)
+        contact = doc.add_paragraph()
+        contact.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Формируем адрес
+        address_parts = []
+        if 'adres' in data and data['adres']:
+            address_parts.append(data['adres'])
+        if 'kod_pocztowy' in data and data['kod_pocztowy']:
+            address_parts.append(data['kod_pocztowy'])
+        if 'miasto' in data and data['miasto']:
+            address_parts.append(data['miasto'])
+        full_address = ', '.join(address_parts) if address_parts else data.get('miasto', '')
+        
+        contact_text = f"📧 {data['email']}  •  📱 {data['telefon']}  •  📍 {full_address}"
+        contact_run = contact.add_run(contact_text)
+        contact_run.font.size = Pt(10)
+        contact_run.font.color.rgb = RGBColor(80, 80, 80)
+        
+        doc.add_paragraph()
+        
+        # O sobie (Цитата с цветной линией)
+        if 'o_sobie' in data and data['o_sobie']:
+            quote = doc.add_paragraph()
+            quote_run = quote.add_run(f'"{data["o_sobie"]}"')
+            quote_run.font.size = Pt(11)
+            quote_run.font.italic = True
+            quote_run.font.color.rgb = RGBColor(60, 60, 60)
+            quote.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            doc.add_paragraph()
+        
+        # Doświadczenie zawodowe
+        if 'doswiadczenie' in data and data['doswiadczenie']:
+            exp_header = doc.add_paragraph()
+            exp_title = exp_header.add_run('💼 DOŚWIADCZENIE ZAWODOWE')
+            exp_title.font.size = Pt(14)
+            exp_title.font.bold = True
+            exp_title.font.color.rgb = RGBColor(31, 78, 121)
+            
+            for exp in data['doswiadczenie']:
+                p = doc.add_paragraph()
+                # Stanowisko (pogrubione, niebieskie)
+                job_title = p.add_run(f"{exp['stanowisko']}\n")
+                job_title.font.bold = True
+                job_title.font.size = Pt(12)
+                job_title.font.color.rgb = RGBColor(31, 78, 121)
+                
+                # Firma i okres (szare)
+                company = p.add_run(f"{exp['firma']}  •  {exp['okres']}\n")
+                company.font.size = Pt(10)
+                company.font.color.rgb = RGBColor(100, 100, 100)
+                
+                # Opis
+                if 'opis' in exp and exp['opis']:
+                    desc = p.add_run(exp['opis'])
+                    desc.font.size = Pt(10)
+                
+                doc.add_paragraph()
+        
+        # Wykształcenie
+        if 'wyksztalcenie' in data and data['wyksztalcenie']:
+            edu_header = doc.add_paragraph()
+            edu_title = edu_header.add_run('🎓 WYKSZTAŁCENIE')
+            edu_title.font.size = Pt(14)
+            edu_title.font.bold = True
+            edu_title.font.color.rgb = RGBColor(31, 78, 121)
+            
+            for edu in data['wyksztalcenie']:
+                p = doc.add_paragraph()
+                degree = p.add_run(f"{edu['stopien']} - {edu['kierunek']}\n")
+                degree.font.bold = True
+                degree.font.size = Pt(12)
+                degree.font.color.rgb = RGBColor(31, 78, 121)
+                
+                uni = p.add_run(f"{edu['uczelnia']}  •  {edu['okres']}\n")
+                uni.font.size = Pt(10)
+                uni.font.color.rgb = RGBColor(100, 100, 100)
+                
+                doc.add_paragraph()
+        
+        # Umiejętności (w kolumnach, z цветными тегами)
+        if 'umiejetnosci' in data and data['umiejetnosci']:
+            skills_header = doc.add_paragraph()
+            skills_title = skills_header.add_run('⚙️ UMIEJĘTNOŚCI')
+            skills_title.font.size = Pt(14)
+            skills_title.font.bold = True
+            skills_title.font.color.rgb = RGBColor(31, 78, 121)
+            
+            # Создаем таблицу для красивого отображения
+            table = doc.add_table(rows=1, cols=3)
+            table.style = 'Light Grid Accent 1'
+            
+            cells = table.rows[0].cells
+            for i, skill in enumerate(data['umiejetnosci'][:9]):  # Максимум 9
+                cell_idx = i % 3
+                if i > 0 and cell_idx == 0:
+                    cells = table.add_row().cells
+                cells[cell_idx].text = f"• {skill}"
+            
+            doc.add_paragraph()
+        
+        # Języki
+        if 'jezyki' in data and data['jezyki']:
+            lang_header = doc.add_paragraph()
+            lang_title = lang_header.add_run('🌍 JĘZYKI')
+            lang_title.font.size = Pt(14)
+            lang_title.font.bold = True
+            lang_title.font.color.rgb = RGBColor(31, 78, 121)
+            
+            for lang in data['jezyki']:
+                p = doc.add_paragraph()
+                lang_name = p.add_run(f"{lang['jezyk']}: ")
+                lang_name.font.bold = True
+                lang_level = p.add_run(lang['poziom'])
+                lang_level.font.color.rgb = RGBColor(31, 78, 121)
+        
+        # Stopka
+        doc.add_paragraph()
+        footer = doc.add_paragraph()
+        footer_text = footer.add_run(
+            f"Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z RODO.\n"
+            f"CV wygenerowane przez cv-konwerter.pl - {datetime.now().strftime('%d.%m.%Y')}"
+        )
+        footer_text.font.size = Pt(8)
+        footer_text.font.italic = True
+        footer_text.font.color.rgb = RGBColor(120, 120, 120)
+        footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Сохранение
+        filename = f"CV_{data['nazwisko']}_{data['imie']}_Nowoczesny.docx"
+        output_path = self.output_dir / filename
+        doc.save(str(output_path))
+        
+        return output_path
     
     def generate_list_motywacyjny(self, data: Dict, cv_data: Dict) -> Path:
         """Сгенерировать сопроводительное письмо"""
