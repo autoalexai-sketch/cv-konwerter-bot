@@ -11,7 +11,8 @@ import json
 
 # Import database models
 from models import db, User, CV, Payment
-from email_service import mail, init_mail, send_premium_cv
+from email_service import mail, init_mail  # Keep for Flask-Mail fallback
+from email_service_sendgrid import send_premium_cv_sendgrid
 from templates_cv.cv_generator import CVGenerator
 
 app = Flask(__name__, 
@@ -300,7 +301,7 @@ def premium_generate():
         user_name = f"{cv_data['imie']} {cv_data['nazwisko']}"
         print(f"📧 Отправка email на {cv_data['email']}...", flush=True)
         
-        email_sent = send_premium_cv(
+        email_sent = send_premium_cv_sendgrid(
             recipient_email=cv_data['email'],
             cv_path=str(cv_path),
             letter_path=str(letter_path),
