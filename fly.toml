@@ -4,6 +4,7 @@ app = 'cv-konwerter-bot'
 primary_region = 'ams'
 
 [build]
+  dockerfile = "Dockerfile.bot"
 
 [http_service]
   internal_port = 8080
