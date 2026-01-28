@@ -100,6 +100,26 @@
                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                                   placeholder="Krótki opis twojej osoby, doświadczenia i celów zawodowych..."></textarea>
                     </div>
+                    
+                    <div class="mt-6">
+                        <label class="block text-gray-700 font-semibold mb-2">🎨 Wybierz szablon CV</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label class="flex items-center p-4 border-2 border-purple-300 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                                <input type="radio" name="template" value="nowoczesny" checked class="mr-3 w-5 h-5">
+                                <div>
+                                    <div class="font-bold text-purple-800">💎 Nowoczesny</div>
+                                    <div class="text-sm text-gray-600">Kolorowy, profesjonalny design</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="template" value="klasyczny" class="mr-3 w-5 h-5">
+                                <div>
+                                    <div class="font-bold text-gray-700">📄 Klasyczny</div>
+                                    <div class="text-sm text-gray-600">Tradycyjny, uniwersalny styl</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Step 2: Doświadczenie (można pominąć) -->
@@ -329,9 +349,12 @@
                 imie: formData.get('imie'),
                 nazwisko: formData.get('nazwisko'),
                 telefon: formData.get('telefon'),
+                adres: formData.get('adres') || '',
+                kod_pocztowy: formData.get('kod_pocztowy') || '',
                 miasto: formData.get('miasto'),
                 stanowisko: formData.get('stanowisko') || '',
                 o_sobie: formData.get('o_sobie') || '',
+                template: formData.get('template') || 'nowoczesny',
                 doswiadczenie: [],
                 wyksztalcenie: [],
                 umiejetnosci: formData.get('umiejetnosci') ? formData.get('umiejetnosci').split(',').map(s => s.trim()) : [],

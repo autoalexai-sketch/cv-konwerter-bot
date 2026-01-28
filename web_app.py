@@ -268,6 +268,7 @@ def premium_generate():
             db.session.commit()
         
         # Сохранение CV в базу
+        template = data.get('template', 'nowoczesny')  # По умолчанию nowoczesny
         cv = CV(
             user_id=user.id,
             imie=data['imie'],
@@ -281,7 +282,7 @@ def premium_generate():
             umiejetnosci=json.dumps(data.get('umiejetnosci', [])),
             jezyki=json.dumps(data.get('jezyki', [])),
             zainteresowania=json.dumps(data.get('zainteresowania', [])),
-            template='klasyczny'
+            template=template
         )
         db.session.add(cv)
         db.session.commit()
@@ -289,8 +290,14 @@ def premium_generate():
         # Генерация файлов
         cv_data = cv.to_dict()
         
-        print(f"🔄 Генерация CV для {cv_data['imie']} {cv_data['nazwisko']}...", flush=True)
-        cv_path = cv_generator.generate_klasyczny(cv_data)
+        print(f"🔄 Генерация CV для {cv_data['imie']} {cv_data['nazwisko']} (szablon: {template})...", flush=True)
+        
+        # Выбор метода генерации в зависимости от шаблона
+        if template == 'nowoczesny':
+            cv_path = cv_generator.generate_nowoczesny(cv_data)
+        else:
+            cv_path = cv_generator.generate_klasyczny(cv_data)
+        
         print(f"✅ CV сгенерировано: {cv_path}", flush=True)
         
         print(f"🔄 Генерация List motywacyjny...", flush=True)
