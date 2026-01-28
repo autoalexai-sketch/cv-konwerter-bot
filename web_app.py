@@ -274,6 +274,8 @@ def premium_generate():
             imie=data['imie'],
             nazwisko=data['nazwisko'],
             telefon=data['telefon'],
+            adres=data.get('adres', ''),
+            kod_pocztowy=data.get('kod_pocztowy', ''),
             miasto=data['miasto'],
             stanowisko=data.get('stanowisko', ''),
             o_sobie=data.get('o_sobie', ''),

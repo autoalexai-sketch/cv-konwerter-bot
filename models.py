@@ -37,6 +37,8 @@ class CV(db.Model):
     imie = db.Column(db.String(100), nullable=False)
     nazwisko = db.Column(db.String(100), nullable=False)
     telefon = db.Column(db.String(20), nullable=False)
+    adres = db.Column(db.String(200))
+    kod_pocztowy = db.Column(db.String(20))
     miasto = db.Column(db.String(100), nullable=False)
     stanowisko = db.Column(db.String(200))
     o_sobie = db.Column(db.Text)
@@ -60,6 +62,8 @@ class CV(db.Model):
             'nazwisko': self.nazwisko,
             'email': self.user.email,
             'telefon': self.telefon,
+            'adres': self.adres or '',
+            'kod_pocztowy': self.kod_pocztowy or '',
             'miasto': self.miasto,
             'stanowisko': self.stanowisko,
             'o_sobie': self.o_sobie,
