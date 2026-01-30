@@ -47,9 +47,10 @@
     "free": {
       "title": "🆓 Wersja darmowa",
       "features": [
-        "Konwersja DOCX → PDF",
-        "Bez limitu plików",
-        "Bez rejestracji"
+        "✅ Konwersja DOCX → PDF",
+        "✅ Do 3 plików dziennie",
+        "✅ Szybka konwersja",
+        "✅ Podstawowe funkcje"
       ],
       "button": "Używasz teraz"
     },
@@ -59,11 +60,15 @@
       "price": "39 zł",
       "priceNote": "jednorazowo",
       "features": [
-        "Wszystko z wersji darmowej",
-        "5 profesjonalnych szablonów CV",
-        "Szablon listu motywacyjnego",
-        "Zgodność z GDPR",
-        "Natychmiastowa dostawa na email"
+        "✅ Wszystko z wersji darmowej",
+        "✅ 4 profesjonalne szablony CV",
+        "✅ 5 schematów kolorystycznych",
+        "✅ Dodanie zdjęcia (opcjonalnie)",
+        "✅ List motywacyjny w zestawie",
+        "✅ Dostarczenie na email (DOCX)",
+        "✅ Edytowalne pliki",
+        "✅ Bezlimitowe poprawki",
+        "✅ Wsparcie 24/7"
       ],
       "button": "Kup Premium (39 zł)",
       "payment": "💳 Płatność przez Przelewy24"
