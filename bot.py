@@ -47,7 +47,7 @@ def get_premium_kb(lang: str) -> InlineKeyboardMarkup:
     if lang == 'pl':
         btn_text = "Kup Premium (9,99 zł/ 2.50 €) 💎"
     elif lang == 'uk':
-        btn_text = "Купити Преміум (9,99 zł/ 2.50 €) 💎"
+        btn_text = "Купити Преміум (9,99 зл/ 2.50 €) 💎"
     else:
         btn_text = "Buy Premium (9,99 zł/ 2.50 €) 💎"
     
@@ -72,7 +72,7 @@ async def cmd_start(message: Message):
             "🇺🇦 Привіт! 👋 Конвертую твоє CV з Word → ідеальний PDF (відповідно до GDPR)\n\n"
             "📄 Надішли .doc або .docx → PDF готовий за лічені секунди\n\n"
             "💎 Преміум: красивий шаблон CV + супровідний лист\n"
-            "   лише 9,99 zł/ 2.50 € ✨"
+            "   лише 9,99 зл/ 2.50 € ✨"
         )
     else:  # en
         text = (
@@ -206,7 +206,7 @@ async def process_premium(callback):
     if lang == 'pl':
         text = "💳 Kup Premium (9,99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nPo opłacie napisz do mnie – wyślę szablon + instrukcję"
     elif lang == 'uk':
-        text = "💳 Купити Преміум (9,99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nПісля оплати напиши мені – надішлю шаблон + інструкцію"
+        text = "💳 Купити Преміум (9,99 зл/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nПісля оплати напиши мені – надішлю шаблон + інструкцію"
     else:
         text = "💳 Buy Premium (9,99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nAfter payment write to me – I'll send template + instructions"
     
