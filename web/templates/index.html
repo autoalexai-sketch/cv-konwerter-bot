@@ -116,7 +116,16 @@
                     <input type="file" id="fileInput" name="file" accept=".doc,.docx" class="hidden">
                     <p class="text-sm text-gray-500 mt-4" data-i18n="convert.upload.maxSize">Maksymalny rozmiar: 15 MB</p>
                 </div>
-
+                
+                <div class="rodo-consent" style="margin-top: 15px;">
+                  <input type="checkbox" id="rodo_consent" required style="margin-right: 8px;">
+                  <label for="rodo_consent" style="font-size: 14px;">
+                   Potwierdzam, że mam prawo do udostępnienia tego dokumentu i akceptuję 
+                    <a href="/polityka-prywatnosci" target="_blank" style="color: #4a6cf7;">politykę prywatności</a> 
+                    zgodnie z RODO.
+                  </label>
+                </div> 
+                
                 <div id="fileName" class="text-center text-gray-700 font-semibold hidden"></div>
 
                 <div id="progressBar" class="w-full bg-gray-200 rounded-full h-4 hidden">
