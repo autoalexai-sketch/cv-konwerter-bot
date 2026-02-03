@@ -45,11 +45,11 @@ def get_user_language(message: Message) -> str:
 # ── Динамическая клавиатура Premium ──────────────────────────────────────
 def get_premium_kb(lang: str) -> InlineKeyboardMarkup:
     if lang == 'pl':
-        btn_text = "Kup Premium (9,99 zł/ 2.50 €) 💎"
+        btn_text = "Kup Premium (9.99 zł/ 2.50 €) 💎"
     elif lang == 'uk':
-        btn_text = "Купити Преміум (9,99 зл/ 2.50 €) 💎"
+        btn_text = "Купити Преміум (9.99 зл/ 2.50 €) 💎"
     else:
-        btn_text = "Buy Premium (9,99 zł/ 2.50 €) 💎"
+        btn_text = "Buy Premium (9.99 zł/ 2.50 €) 💎"
     
     return InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(text=btn_text, callback_data="buy_premium")
@@ -65,21 +65,21 @@ async def cmd_start(message: Message):
             "🇪🇺 Cześć! 👋 Konwertuję CV z Word → idealny PDF (zgodny z RODO/GDPR)\n\n"
             "📄 Wyślij plik .doc lub .docx → PDF gotowy w kilka sekund\n\n"
             "💎 Premium: piękny szablon CV + list motywacyjny\n"
-            "   tylko 9,99 zł/ 2.50 € ✨"
+            "   tylko 9.99 zł/ 2.50 € ✨"
         )
     elif lang == 'uk':
         text = (
             "🇺🇦 Привіт! 👋 Конвертую твоє CV з Word → ідеальний PDF (відповідно до GDPR)\n\n"
             "📄 Надішли .doc або .docx → PDF готовий за лічені секунди\n\n"
             "💎 Преміум: красивий шаблон CV + супровідний лист\n"
-            "   лише 9,99 зл/ 2.50 € ✨"
+            "   лише 9.99 зл/ 2.50 € ✨"
         )
     else:  # en
         text = (
             "🇪🇺 Hi! 👋 Converting your CV from Word → perfect PDF (GDPR-compliant)\n\n"
             "📄 Send .doc or .docx file → PDF ready in seconds\n\n"
             "💎 Premium: beautiful template + cover letter\n"
-            "   only 9,99 zł/ 2.50 € ✨"
+            "   only 9.99 zł/ 2.50 € ✨"
         )
     
     await message.answer(text, reply_markup=get_premium_kb(lang))
@@ -204,11 +204,11 @@ async def process_premium(callback):
     lang = get_user_language(callback.message)
     
     if lang == 'pl':
-        text = "💳 Kup Premium (9,99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nPo opłacie napisz do mnie – wyślę szablon + instrukcję"
+        text = "💳 Kup Premium (9.99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nPo opłacie napisz do mnie – wyślę szablon + instrukcję"
     elif lang == 'uk':
-        text = "💳 Купити Преміум (9,99 зл/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nПісля оплати напиши мені – надішлю шаблон + інструкцію"
+        text = "💳 Купити Преміум (9.99 зл/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nПісля оплати напиши мені – надішлю шаблон + інструкцію"
     else:
-        text = "💳 Buy Premium (9,99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nAfter payment write to me – I'll send template + instructions"
+        text = "💳 Buy Premium (9.99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nAfter payment write to me – I'll send template + instructions"
     
     await callback.message.answer(text)
 
