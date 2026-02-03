@@ -43,7 +43,7 @@
   },
   "premium": {
     "title": "💎 Premium Package",
-    "subtitle": "Professional CV + Cover Letter for £9 / $11",
+    "subtitle": "Professional CV + Cover Letter for 9.99 PLN",
     "free": {
       "title": "🆓 Free version",
       "features": [
@@ -56,7 +56,7 @@
     "paid": {
       "title": "💎 Premium",
       "badge": "Popular",
-      "price": "£9",
+      "price": "9.99 PLN",
       "priceNote": "one-time",
       "features": [
         "Everything from free version",
@@ -65,7 +65,7 @@
         "GDPR compliant",
         "Instant delivery via email"
       ],
-      "button": "Buy Premium (£9)",
+      "button": "Buy Premium (9.99 PLN)",
       "payment": "💳 Payment via Przelewy24"
     }
   },
@@ -76,6 +76,6 @@
   },
   "footer": {
     "copyright": "© 2026 CV Converter. All rights reserved.",
-    "privacy": "Your files are automatically deleted after 1 hour."
+    "privacy": "Your files are automatically deleted after 24 hours in accordance with the GDPR."
   }
 }
