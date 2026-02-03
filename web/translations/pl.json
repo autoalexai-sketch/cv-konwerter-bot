@@ -43,7 +43,7 @@
   },
   "premium": {
     "title": "💎 Pakiet Premium",
-    "subtitle": "Profesjonalne CV + List motywacyjny za 39 zł",
+    "subtitle": "Profesjonalne CV + List motywacyjny za 9,99 zł",
     "free": {
       "title": "🆓 Wersja darmowa",
       "features": [
@@ -57,7 +57,7 @@
     "paid": {
       "title": "💎 Premium",
       "badge": "Popularne",
-      "price": "39 zł",
+      "price": "9,99 zł",
       "priceNote": "jednorazowo",
       "features": [
         "✅ Wszystko z wersji darmowej",
@@ -70,7 +70,7 @@
         "✅ Bezlimitowe poprawki",
         "✅ Wsparcie 24/7"
       ],
-      "button": "Kup Premium (39 zł)",
+      "button": "Kup Premium (9,99 zł)",
       "payment": "💳 Płatność przez Przelewy24"
     }
   },
@@ -81,6 +81,6 @@
   },
   "footer": {
     "copyright": "© 2026 CV Konwerter. Wszystkie prawa zastrzeżone.",
-    "privacy": "Twoje pliki są automatycznie usuwane po 1 godzinie."
+    "privacy": "Twoje pliki są automatycznie usuwane po 24 godzinach zgodnie z RODO."
   }
 }
