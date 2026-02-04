@@ -3,6 +3,7 @@ import asyncio
 import subprocess
 import unicodedata
 import re
+import requests
 from datetime import datetime
 from flask import Flask, request
 from aiogram import Bot, Dispatcher, types
@@ -17,52 +18,53 @@ OUTPUT_FOLDER = os.path.join(BASE_TMP, 'outputs')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
+# Конфигурация
 API_TOKEN = os.getenv("BOT_TOKEN")
+# Ссылка на ваш n8n (вставьте свою, когда создадите Webhook)
+N8N_WEBHOOK_URL = "https://ВАШ_N8N_URL_ТУТ"
+
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
 def smart_secure_filename(filename):
     """Поддержка Unicode: сохраняет буквы PL, UA, EN и убирает только опасные символы."""
     name, ext = os.path.splitext(filename)
-    # NFC нормализация важна для корректного отображения имен в Telegram
     name = unicodedata.normalize('NFC', name)
-    # Убираем только спецсимволы, которые запрещены в файловых системах
     name = re.sub(r'[\\/*?:"<>|]', "", name)
     name = name.strip() or "cv_document"
     return f"{name}{ext}"
 
 @dp.message()
 async def handle_message(message: types.Message):
-    # Команда /start на трех языках
+    # 1. Приветствие на трех языках
     if message.text == '/start':
         welcome_text = (
-            "🇵🇱 Cześć! Wyślij mi plik .docx, а ja go skonwertuję na PDF.\n"
+            "🇵🇱 Cześć! Wyślij mi plik .docx, a ja go skonwertuję na PDF.\n"
             "🇺🇦 Привіт! Надішліть мені файл .docx, і я конвертую його в PDF.\n"
             "🇬🇧 Hi! Send me a .docx file, and I will convert it to PDF."
         )
         await message.answer(welcome_text)
         return
 
+    # 2. Обработка документа
     if message.document:
         file_name = message.document.file_name
         if not file_name.lower().endswith(('.docx', '.doc')):
             await message.answer("❌ Format error! (PL: Błędny format / UA: Невірний формат)")
             return
 
-        # Уведомление о начале работы
         status_msg = await message.answer("⏳ Processing... (Konwertuję / Конвертую)")
         
-        # Генерация пути с поддержкой Unicode
         safe_name = smart_secure_filename(file_name)
         timestamp = datetime.now().strftime('%H%M%S')
         input_path = os.path.join(UPLOAD_FOLDER, f"{timestamp}_{safe_name}")
         
         try:
-            # 1. Скачивание
+            # Скачивание файла
             file_info = await bot.get_file(message.document.file_id)
             await bot.download_file(file_info.file_path, input_path)
             
-            # 2. Конвертация
+            # Конвертация через LibreOffice
             subprocess.run([
                 'soffice', '--headless', 
                 '-env:UserInstallation=file:///tmp/.libreoffice',
@@ -71,27 +73,44 @@ async def handle_message(message: types.Message):
                 input_path
             ], check=True, timeout=40)
 
-            # 3. Отправка
+            # Подготовка пути к PDF
             output_name = os.path.splitext(os.path.basename(input_path))[0] + '.pdf'
             output_path = os.path.join(OUTPUT_FOLDER, output_name)
 
             if os.path.exists(output_path):
+                # Отправка готового файла
                 await message.answer_document(
                     FSInputFile(output_path), 
                     caption=f"✅ Done! (Gotowe / Готово)"
                 )
+                
+                # --- УВЕДОМЛЕНИЕ В n8n (для системы отзывов) ---
+                try:
+                    payload = {
+                        "user_id": message.from_user.id,
+                        "username": message.from_user.username,
+                        "language": message.from_user.language_code,
+                        "filename": safe_name,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    requests.post(N8N_WEBHOOK_URL, json=payload, timeout=1)
+                except:
+                    pass # Игнорируем ошибки n8n, чтобы не мешать пользователю
+                
                 await status_msg.delete()
-                # Удаление временных файлов
+                
+                # Очистка за собой
                 os.remove(input_path)
                 os.remove(output_path)
             else:
-                raise Exception("Conversion failed")
+                raise Exception("PDF file not found after conversion")
 
         except Exception as e:
-            print(f"Error during conversion: {e}")
+            print(f"Error: {e}")
             await message.answer("❌ Error! (Błąd / Помилка)")
 
-# --- СТАНДАРТНЫЕ МАРШРУТЫ FLASK ---
+# --- МАРШРУТЫ ДЛЯ FLY.IO И WEBHOOK ---
+
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
     update = types.Update.model_validate(request.json, context={"bot": bot})
@@ -101,6 +120,10 @@ def telegram_webhook():
 @app.route('/health')
 def health():
     return "OK", 200
+
+@app.route('/')
+def index():
+    return "CV Bot is alive", 200
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
