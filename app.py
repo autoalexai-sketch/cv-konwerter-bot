@@ -39,9 +39,51 @@ def telegram_webhook():
 @dp.message()
 async def handle_message(message: types.Message):
     if message.text == '/start':
-        await message.answer("Cześć! Wyślij mi файл .docx!")
-    else:
-        await message.answer("Otrzymałem wiadomość!")
+        await message.answer("Cześć! Wyślij мне файл .docx, и я сделаю из него PDF.")
+        return
+
+    if message.document:
+        # Проверяем расширение
+        if not message.document.file_name.endswith(('.docx', '.doc')):
+            await message.answer("Ошибка: Я принимаю только файлы Word (.docx/.doc)")
+            return
+
+        status_msg = await message.answer("⏳ Скачиваю файл...")
+        
+        # Генерируем пути
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        input_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_{message.document.file_name}")
+        output_dir = app.config['OUTPUT_FOLDER']
+        
+        # 1. Скачиваем файл из Telegram
+        file_info = await bot.get_file(message.document.file_id)
+        await bot.download_file(file_info.file_path, input_path)
+        
+        await status_msg.edit_text("⚙️ Конвертирую в PDF (LibreOffice)...")
+        
+        try:
+            # 2. Запускаем конвертацию
+            subprocess.run([
+                'soffice', '--headless', 
+                '-env:UserInstallation=file:///tmp/.libreoffice',
+                '--convert-to', 'pdf', 
+                '--outdir', output_dir, 
+                input_path
+            ], check=True)
+
+            output_path = input_path.rsplit('.', 1)[0] + '.pdf'
+
+            # 3. Отправляем результат пользователю
+            await status_msg.edit_text("✅ Готово! Отправляю...")
+            await message.answer_document(types.FSInputFile(output_path))
+            
+            # Чистим за собой (опционально)
+            os.remove(input_path)
+            if os.path.exists(output_path):
+                os.remove(output_path)
+
+        except Exception as e:
+            await status_msg.edit_text(f"❌ Ошибка при конвертации: {str(e)}")
 
 # Эта функция скажет Телеграму, куда слать данные
 async def on_startup():
