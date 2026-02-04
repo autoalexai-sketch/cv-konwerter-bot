@@ -1,16 +1,16 @@
 import os
 import asyncio
 import subprocess
-import shutil
+import unicodedata
+import re
 from datetime import datetime
-from flask import Flask, render_template, request, send_file
+from flask import Flask, request
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import FSInputFile
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# Используем /tmp, так как на Fly.io это обычно доступная для записи область
+# Папки для временных файлов
 BASE_TMP = "/tmp/cv_bot"
 UPLOAD_FOLDER = os.path.join(BASE_TMP, 'uploads')
 OUTPUT_FOLDER = os.path.join(BASE_TMP, 'outputs')
@@ -21,73 +21,86 @@ API_TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# --- ЛОГИКА БОТА ---
+def smart_secure_filename(filename):
+    """Поддержка Unicode: сохраняет буквы PL, UA, EN и убирает только опасные символы."""
+    name, ext = os.path.splitext(filename)
+    # NFC нормализация важна для корректного отображения имен в Telegram
+    name = unicodedata.normalize('NFC', name)
+    # Убираем только спецсимволы, которые запрещены в файловых системах
+    name = re.sub(r'[\\/*?:"<>|]', "", name)
+    name = name.strip() or "cv_document"
+    return f"{name}{ext}"
 
 @dp.message()
 async def handle_message(message: types.Message):
+    # Команда /start на трех языках
     if message.text == '/start':
-        await message.answer("Cześć! Отправь мне .docx, и я сделаю из него PDF.")
+        welcome_text = (
+            "🇵🇱 Cześć! Wyślij mi plik .docx, а ja go skonwertuję na PDF.\n"
+            "🇺🇦 Привіт! Надішліть мені файл .docx, і я конвертую його в PDF.\n"
+            "🇬🇧 Hi! Send me a .docx file, and I will convert it to PDF."
+        )
+        await message.answer(welcome_text)
         return
 
     if message.document:
-        if not message.document.file_name.lower().endswith(('.docx', '.doc')):
-            await message.answer("❌ Ошибка: Нужен файл Word (.docx/.doc)")
+        file_name = message.document.file_name
+        if not file_name.lower().endswith(('.docx', '.doc')):
+            await message.answer("❌ Format error! (PL: Błędny format / UA: Невірний формат)")
             return
 
-        status_msg = await message.answer("⏳ Обработка...")
+        # Уведомление о начале работы
+        status_msg = await message.answer("⏳ Processing... (Konwertuję / Конвертую)")
         
-        # Безопасное имя файла
-        orig_name = secure_filename(message.document.file_name)
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        input_path = os.path.join(UPLOAD_FOLDER, f"{timestamp}_{orig_name}")
-        
-        # Скачивание
-        file_info = await bot.get_file(message.document.file_id)
-        await bot.download_file(file_info.file_path, input_path)
+        # Генерация пути с поддержкой Unicode
+        safe_name = smart_secure_filename(file_name)
+        timestamp = datetime.now().strftime('%H%M%S')
+        input_path = os.path.join(UPLOAD_FOLDER, f"{timestamp}_{safe_name}")
         
         try:
-            # Конвертация
+            # 1. Скачивание
+            file_info = await bot.get_file(message.document.file_id)
+            await bot.download_file(file_info.file_path, input_path)
+            
+            # 2. Конвертация
             subprocess.run([
                 'soffice', '--headless', 
                 '-env:UserInstallation=file:///tmp/.libreoffice',
                 '--convert-to', 'pdf', 
                 '--outdir', OUTPUT_FOLDER, 
                 input_path
-            ], check=True, timeout=30)
+            ], check=True, timeout=40)
 
-            # Ищем готовый PDF (LibreOffice меняет расширение)
-            base_name = os.path.splitext(os.path.basename(input_path))[0]
-            output_path = os.path.join(OUTPUT_FOLDER, f"{base_name}.pdf")
+            # 3. Отправка
+            output_name = os.path.splitext(os.path.basename(input_path))[0] + '.pdf'
+            output_path = os.path.join(OUTPUT_FOLDER, output_name)
 
             if os.path.exists(output_path):
-                await message.answer_document(FSInputFile(output_path), caption="✅ Твой PDF готов!")
+                await message.answer_document(
+                    FSInputFile(output_path), 
+                    caption=f"✅ Done! (Gotowe / Готово)"
+                )
                 await status_msg.delete()
-                # Удаляем файлы сразу после отправки
+                # Удаление временных файлов
                 os.remove(input_path)
                 os.remove(output_path)
             else:
-                raise Exception("Файл PDF не был создан")
+                raise Exception("Conversion failed")
 
         except Exception as e:
-            print(f"Error: {e}")
-            await message.answer(f"❌ Ошибка конвертации. Попробуй другой файл.")
+            print(f"Error during conversion: {e}")
+            await message.answer("❌ Error! (Błąd / Помилка)")
 
-# --- FLASK ROUTES ---
-
+# --- СТАНДАРТНЫЕ МАРШРУТЫ FLASK ---
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
     update = types.Update.model_validate(request.json, context={"bot": bot})
-    # Запускаем обработку в фоновом цикле событий
     asyncio.run(dp.feed_update(bot, update))
     return "OK", 200
 
 @app.route('/health')
 def health():
     return "OK", 200
-
-@app.route('/')
-def index():
-    return "CV Converter Bot is Running", 200
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
