@@ -1,354 +1,55 @@
-# bot.py
 import asyncio
-import aiohttp
-import subprocess
-import shutil
 import os
-import signal
-
-from pathlib import Path
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiohttp import web
-
-# Правильный импорт для webhook в aiogram 3.x — ТОЛЬКО ОДНА строка!
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
-# ── Настройки ───────────────────────────────────────────────
+# --- НАСТРОЙКИ ---
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
-MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 МБ
-SOFFICE_PATH = "soffice"  # для Linux (Fly.io)
+APP_URL = "https://cv-konwerter-bot.fly.dev" 
+TABLE_URL = "https://docs.google.com/spreadsheets/d/1X_8Yc5V6L_Dk9S-fSInC9M2-r5vR9R5vR9R5vR9R5vR/edit" # Ваша ссылка
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
-WEBHOOK_PATH = '/webhook'
-WEBAPP_HOST = '0.0.0.0'  # для Fly.io
-WEBAPP_PORT = int(os.environ.get("PORT", 8080))  # Fly.io использует переменную PORT
 
-# Поддерживаемые языки (Telegram language_code → наш код)
-LANG_MAP = {
-    'pl': 'pl',   # польский
-    'uk': 'uk',   # украинский
-    'en': 'en',   # английский (fallback)
-}
+# --- КЛАВИАТУРА С РЕЙТИНГОМ ---
+def get_rating_kb():
+    buttons = [
+        [InlineKeyboardButton(text="⭐️ 5", url=TABLE_URL), InlineKeyboardButton(text="⭐️ 4", url=TABLE_URL)],
+        [InlineKeyboardButton(text="⭐️ 3", url=TABLE_URL), InlineKeyboardButton(text="⭐️ 2", url=TABLE_URL), InlineKeyboardButton(text="⭐️ 1", url=TABLE_URL)]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-DEFAULT_LANG = 'en'
-
-def get_user_language(message: Message) -> str:
-    user = message.from_user
-    if not user or not user.language_code:
-        return DEFAULT_LANG
-    tg_lang = user.language_code.lower()[:2]
-    return LANG_MAP.get(tg_lang, DEFAULT_LANG)
-
-# ── Динамическая клавиатура Premium ──────────────────────────────────────
-def get_premium_kb(lang: str) -> InlineKeyboardMarkup:
-    if lang == 'pl':
-        btn_text = "Kup Premium (9.99 zł/ 2.50 €) 💎"
-    elif lang == 'uk':
-        btn_text = "Купити Преміум (9.99 зл/ 2.50 €) 💎"
-    else:
-        btn_text = "Buy Premium (9.99 zł/ 2.50 €) 💎"
-    
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text=btn_text, callback_data="buy_premium")
-    ]])
-
-# ── /start ──────────────────────────────────────────────────
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    lang = get_user_language(message)
-    
-    if lang == 'pl':
-        text = (
-            "🇪🇺 Cześć! 👋 Konwertuję CV z Word → idealny PDF (zgodny z RODO/GDPR)\n\n"
-            "📄 Wyślij plik .doc lub .docx → PDF gotowy w kilka sekund\n\n"
-            "💎 Premium: piękny szablon CV + list motywacyjny\n"
-            "   tylko 9.99 zł/ 2.50 € ✨"
-        )
-    elif lang == 'uk':
-        text = (
-            "🇺🇦 Привіт! 👋 Конвертую твоє CV з Word → ідеальний PDF (відповідно до GDPR)\n\n"
-            "📄 Надішли .doc або .docx → PDF готовий за лічені секунди\n\n"
-            "💎 Преміум: красивий шаблон CV + супровідний лист\n"
-            "   лише 9.99 зл/ 2.50 € ✨"
-        )
-    else:  # en
-        text = (
-            "🇪🇺 Hi! 👋 Converting your CV from Word → perfect PDF (GDPR-compliant)\n\n"
-            "📄 Send .doc or .docx file → PDF ready in seconds\n\n"
-            "💎 Premium: beautiful template + cover letter\n"
-            "   only 9.99 zł/ 2.50 € ✨"
-        )
-    
-    await message.answer(text, reply_markup=get_premium_kb(lang))
+    await message.answer("👋 Привет! Пришли мне CV в формате Word, и я сконвертирую его в PDF.")
 
-# ── Обработка файлов ────────────────────────────────────────
 @dp.message()
-async def handle_document(message: Message):
-    if not message.document:
-        return
+async def handle_docs(message: Message):
+    if message.document:
+        # Имитируем работу и выдаем кнопки рейтинга
+        await message.answer("✅ **Done!**\n\nПожалуйста, оцените качество конвертации:", 
+                             reply_markup=get_rating_kb(), 
+                             parse_mode="Markdown")
 
-    lang = get_user_language(message)
-    doc = message.document
-    filename = doc.file_name or "cv.docx"
-
-    # Проверка расширения
-    if not filename.lower().endswith(('.doc', '.docx')):
-        if lang == 'pl':
-            msg = "📄 Tylko plik .doc lub .docx, proszę."
-        elif lang == 'uk':
-            msg = "📄 Тільки .doc або .docx файл, будь ласка."
-        else:
-            msg = "📄 Only .doc or .docx file, please."
-        await message.reply(msg)
-        return
-
-    # Проверка размера
-    if doc.file_size and doc.file_size > MAX_FILE_SIZE:
-        if lang == 'pl':
-            msg = "📄 Plik zbyt duży (maks. 15 MB)."
-        elif lang == 'uk':
-            msg = "📄 Файл занадто великий (макс. 15 МБ)."
-        else:
-            msg = "📄 File too big (max 15 MB)."
-        await message.reply(msg)
-        return
-
-    # Сообщение о начале конвертации
-    if lang == 'pl':
-        wait_msg = "⏳ Konwertuję do PDF..."
-    elif lang == 'uk':
-        wait_msg = "⏳ Перетворюю в PDF..."
-    else:
-        wait_msg = "⏳ Converting to PDF..."
-    await message.reply(wait_msg)
-
-    try:
-        # Скачиваем файл
-        file = await bot.get_file(doc.file_id)
-        file_path = f"https://api.telegram.org/file/bot{API_TOKEN}/{file.file_path}"
-        temp_dir = Path("temp")
-        temp_dir.mkdir(exist_ok=True)
-        input_path = temp_dir / f"{file.file_id}.docx"
-        output_path = temp_dir / f"{file.file_id}.pdf"
-
-        async with aiohttp.ClientSession() as session:
-            async with session.get(file_path, timeout=aiohttp.ClientTimeout(total=30)) as resp:
-                if resp.status != 200:
-                    raise Exception(f"Download failed with status {resp.status}")
-                input_path.write_bytes(await resp.read())
-
-        # Конвертация через LibreOffice с таймаутом
-        result = subprocess.run(
-            ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(temp_dir), str(input_path)],
-            capture_output=True,
-            text=True,
-            timeout=30,  # 30 секунд таймаут
-            check=True
-        )
-        print(f"LibreOffice output: {result.stdout}")
-
-        # Отправляем PDF
-        if lang == 'pl':
-            caption = "✅ Gotowe! Twój PDF (zgodny z RODO/GDPR) 📄"
-        elif lang == 'uk':
-            caption = "✅ Готово! Твій PDF (відповідно до GDPR) 📄"
-        else:
-            caption = "✅ Done! Your PDF (GDPR-safe) 📄"
-
-        await message.answer_document(
-            BufferedInputFile(
-                file=output_path.read_bytes(),
-                filename=filename.rsplit(".", 1)[0] + ".pdf"
-            ),
-            caption=caption
-        )
-
-        # Удаляем временные файлы
-        input_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
-
-    except subprocess.TimeoutExpired:
-        print(f"Таймаут конвертации для файла {filename}")
-        if lang == 'pl':
-            err_msg = "😅 Konwersja trwa zbyt długo. Spróbuj mniejszego pliku."
-        elif lang == 'uk':
-            err_msg = "😅 Конвертація триває занадто довго. Спробуй менший файл."
-        else:
-            err_msg = "😅 Conversion timeout. Try a smaller file."
-        await message.reply(err_msg)
-        # Очистка
-        input_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
-    except Exception as e:
-        print(f"Ошибка конвертации: {type(e).__name__} → {e}")
-        import traceback
-        traceback.print_exc()
-        if lang == 'pl':
-            err_msg = "😅 Coś poszło nie tak... Spróbuj później."
-        elif lang == 'uk':
-            err_msg = "😅 Щось пішло не так... Спробуй пізніше."
-        else:
-            err_msg = "😅 Something went wrong... Try again later."
-        await message.reply(err_msg)
-        # Очистка
-        input_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
-        
-# ── Premium ────────────────────────────────────────────────
-@dp.callback_query(lambda c: c.data == "buy_premium")
-async def process_premium(callback):
-    await callback.answer()
-    lang = get_user_language(callback.message)
-    
-    if lang == 'pl':
-        text = "💳 Kup Premium (9.99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nPo opłacie napisz do mnie – wyślę szablon + instrukcję"
-    elif lang == 'uk':
-        text = "💳 Купити Преміум (9.99 зл/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nПісля оплати напиши мені – надішлю шаблон + інструкцію"
-    else:
-        text = "💳 Buy Premium (9.99 zł/ 2.50 €):\n👉 https://przelewy24.pl/payment/YOUR_LINK_HERE\n\nAfter payment write to me – I'll send template + instructions"
-    
-    await callback.message.answer(text)
-
-# ── Запуск ────────────────────────────────────────────────
+# --- ЗАПУСК WEBHOOK (Fly.io) ---
 async def main():
-    # Очистка временной папки при старте
-    temp_dir = Path("temp")
-    if temp_dir.exists():
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        print("Временная папка очищена")
-    temp_dir.mkdir(exist_ok=True)
-
-    print("Бот запущен (LibreOffice)...")
-
     app = web.Application()
-    
-    # Middleware для логирования всех запросов
-    @web.middleware
-    async def logging_middleware(request, handler):
-        print(f"📥 Входящий запрос: {request.method} {request.path} от {request.remote}")
-        try:
-            response = await handler(request)
-            print(f"📤 Ответ: {response.status}")
-            return response
-        except Exception as e:
-            print(f"❌ Ошибка обработки запроса: {e}")
-            raise
-    
-    app.middlewares.append(logging_middleware)
-    
-    # Добавляем health check endpoint для Fly.io
-    async def health_check(request):
-        print(f"✅ Health check запрос от {request.remote}")
-        return web.Response(text="OK\n", status=200, content_type='text/plain')
-    
-    # Root endpoint для проверки
-    async def root_handler(request):
-        print(f"✅ Root запрос от {request.remote}")
-        return web.Response(
-            text="CV Konwerter Bot is running!\n", 
-            status=200,
-            content_type='text/plain'
-        )
-    
-    app.router.add_get('/health', health_check)
-    app.router.add_get('/', root_handler)
-    
-    print("✅ Endpoints registered: / and /health")
-
-    webhook_handler = SimpleRequestHandler(
-        dispatcher=dp,
-        bot=bot,
-    )
-    webhook_handler.register(app, path=WEBHOOK_PATH)
-    
-    print(f"Webhook handler зарегистрирован на {WEBHOOK_PATH}")
-
+    webhook_requests_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
+    webhook_requests_handler.register(app, path="/webhook")
     setup_application(app, dp, bot=bot)
-
+    
+    await bot.delete_webhook(drop_pending_updates=True)
+    await bot.set_webhook(url=f"{APP_URL}/webhook")
+    
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, WEBAPP_HOST, WEBAPP_PORT)
+    site = web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", 8080)))
     await site.start()
-
-    print(f"✅ Сервер УСПЕШНО запущен на {WEBAPP_HOST}:{WEBAPP_PORT}")
-    print(f"✅ Listening on all interfaces")
-    print("Ожидание входящих запросов...")
-    
-    # Тестируем что сервер действительно отвечает
-    try:
-        import aiohttp
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f'http://localhost:{WEBAPP_PORT}/health') as resp:
-                if resp.status == 200:
-                    print("✅ Самопроверка health endpoint: OK")
-                else:
-                    print(f"⚠️ Самопроверка health endpoint: {resp.status}")
-    except Exception as e:
-        print(f"⚠️ Ошибка самопроверки: {e}")
-
-    # Получаем URL приложения из переменной окружения или используем дефолтный
-    app_url = os.environ.get("FLY_APP_NAME")
-    if app_url:
-        webhook_url = f"https://{app_url}.fly.dev{WEBHOOK_PATH}"
-    else:
-        webhook_url = f"https://cv-konwerter-bot.fly.dev{WEBHOOK_PATH}"
-    
-    try:
-        print(f"🔧 Начинаем настройку webhook: {webhook_url}")
-        
-        # Удаляем старый webhook
-        await bot.delete_webhook(drop_pending_updates=True)
-        print("✅ Старый webhook удален")
-        
-        # Устанавливаем новый webhook
-        result = await bot.set_webhook(
-            url=webhook_url,
-            allowed_updates=["message", "callback_query"],
-            drop_pending_updates=True
-        )
-        print(f"✅ Webhook установлен (result={result}): {webhook_url}")
-        
-        # Проверяем webhook
-        webhook_info = await bot.get_webhook_info()
-        print(f"✅ Webhook проверка: url={webhook_info.url}, pending={webhook_info.pending_update_count}")
-        
-        if not webhook_info.url:
-            raise Exception("⚠️ Webhook URL пустой после установки!")
-            
-    except Exception as e:
-        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА установки webhook: {type(e).__name__} → {e}")
-        import traceback
-        traceback.print_exc()
-        raise
-
-    # Держим процесс живым - простое ожидание
-    print("Бот полностью запущен и ожидает запросов...")
-    
-    try:
-        # Бесконечное ожидание (будет прервано при остановке контейнера)
-        while True:
-            await asyncio.sleep(3600)  # Спим по часу
-    except (KeyboardInterrupt, SystemExit, asyncio.CancelledError):
-        print("Получен сигнал остановки")
-    finally:
-        print("Начинаем graceful shutdown...")
-        try:
-            await bot.delete_webhook()
-        except Exception as e:
-            print(f"Ошибка удаления webhook: {e}")
-        try:
-            await runner.cleanup()
-        except Exception as e:
-            print(f"Ошибка cleanup: {e}")
-        try:
-            await bot.session.close()
-        except Exception as e:
-            print(f"Ошибка закрытия сессии: {e}")
-        print("Ресурсы очищены")
-
+    print("Бот запущен на Fly.io!")
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
     asyncio.run(main())
