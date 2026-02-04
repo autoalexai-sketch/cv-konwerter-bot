@@ -1,0 +1,18 @@
+app = "cv-konwerter-bot"
+
+[build]
+  dockerfile = "Dockerfile.bot"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+[http_service.checks]
+  interval = "15s"
+  timeout = "10s"
+  grace_period = "30s"
+  method = "GET"
+  path = "/health"
