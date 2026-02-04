@@ -1,3 +1,4 @@
+
 import os
 import asyncio
 import subprocess
@@ -6,110 +7,91 @@ import re
 import requests
 from datetime import datetime
 from flask import Flask, request
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import FSInputFile
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.types import FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 
 app = Flask(__name__)
 
-# Папки для временных файлов
-BASE_TMP = "/tmp/cv_bot"
-UPLOAD_FOLDER = os.path.join(BASE_TMP, 'uploads')
-OUTPUT_FOLDER = os.path.join(BASE_TMP, 'outputs')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-# Конфигурация
+# --- НАСТРОЙКИ ---
 API_TOKEN = os.getenv("BOT_TOKEN")
-# Ссылка на ваш n8n (вставьте свою, когда создадите Webhook)
-N8N_WEBHOOK_URL = "https://ВАШ_N8N_URL_ТУТ"
+# ВСТАВЬТЕ СЮДА ССЫЛКУ ИЗ GOOGLE APPS SCRIPT
+GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwzJ0NbWy07Sgc9BpzxtbW0uWL4fnHG34Wk0PimHlX6jwTV1lBzhRf1avmFwGZ5bxfy/exec"
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-def smart_secure_filename(filename):
-    """Поддержка Unicode: сохраняет буквы PL, UA, EN и убирает только опасные символы."""
+BASE_TMP = "/tmp/cv_bot"
+os.makedirs(os.path.join(BASE_TMP, 'uploads'), exist_ok=True)
+os.makedirs(os.path.join(BASE_TMP, 'outputs'), exist_ok=True)
+
+def smart_name(filename):
     name, ext = os.path.splitext(filename)
     name = unicodedata.normalize('NFC', name)
     name = re.sub(r'[\\/*?:"<>|]', "", name)
-    name = name.strip() or "cv_document"
-    return f"{name}{ext}"
+    return f"{name.strip() or 'cv'}{ext}"
 
-@dp.message()
-async def handle_message(message: types.Message):
-    # 1. Приветствие на трех языках
-    if message.text == '/start':
-        welcome_text = (
-            "🇵🇱 Cześć! Wyślij mi plik .docx, a ja go skonwertuję na PDF.\n"
-            "🇺🇦 Привіт! Надішліть мені файл .docx, і я конвертую його в PDF.\n"
-            "🇬🇧 Hi! Send me a .docx file, and I will convert it to PDF."
-        )
-        await message.answer(welcome_text)
+# Клавиатура с оценками
+def get_rating_keyboard(filename):
+    buttons = [
+        [InlineKeyboardButton(text="⭐️ 5", callback_data=f"rate_5_{filename}"),
+         InlineKeyboardButton(text="⭐️ 4", callback_data=f"rate_4_{filename}")],
+        [InlineKeyboardButton(text="👎 1-3", callback_data=f"rate_3_{filename}")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+@dp.message(F.text == '/start')
+async def cmd_start(message: types.Message):
+    await message.answer("🇵🇱 Cześć! Wyślij mi .docx\n🇺🇦 Привіт! Надішліть .docx\n🇬🇧 Hi! Send .docx")
+
+@dp.message(F.document)
+async def handle_docs(message: types.Message):
+    if not message.document.file_name.lower().endswith(('.docx', '.doc')):
+        await message.answer("❌ Error: .docx please")
         return
 
-    # 2. Обработка документа
-    if message.document:
-        file_name = message.document.file_name
-        if not file_name.lower().endswith(('.docx', '.doc')):
-            await message.answer("❌ Format error! (PL: Błędny format / UA: Невірний формат)")
-            return
+    status = await message.answer("⏳ Processing...")
+    safe_name = smart_name(message.document.file_name)
+    input_path = f"/tmp/cv_bot/uploads/{datetime.now().strftime('%H%M%S')}_{safe_name}"
+    
+    try:
+        file_info = await bot.get_file(message.document.file_id)
+        await bot.download_file(file_info.file_path, input_path)
+        
+        subprocess.run(['soffice', '--headless', '-env:UserInstallation=file:///tmp/.libreoffice',
+                        '--convert-to', 'pdf', '--outdir', '/tmp/cv_bot/outputs', input_path], check=True, timeout=40)
 
-        status_msg = await message.answer("⏳ Processing... (Konwertuję / Конвертую)")
-        
-        safe_name = smart_secure_filename(file_name)
-        timestamp = datetime.now().strftime('%H%M%S')
-        input_path = os.path.join(UPLOAD_FOLDER, f"{timestamp}_{safe_name}")
-        
-        try:
-            # Скачивание файла
-            file_info = await bot.get_file(message.document.file_id)
-            await bot.download_file(file_info.file_path, input_path)
+        out_path = f"/tmp/cv_bot/outputs/{os.path.splitext(os.path.basename(input_path))[0]}.pdf"
+
+        if os.path.exists(out_path):
+            await message.answer_document(FSInputFile(out_path), caption="✅ Done!")
+            # Спрашиваем оценку
+            await message.answer("🇵🇱 Jak oceniasz jakość?\n🇺🇦 Як оцінюєте якість?\n🇬🇧 Rate the quality:", 
+                               reply_markup=get_rating_keyboard(safe_name))
             
-            # Конвертация через LibreOffice
-            subprocess.run([
-                'soffice', '--headless', 
-                '-env:UserInstallation=file:///tmp/.libreoffice',
-                '--convert-to', 'pdf', 
-                '--outdir', OUTPUT_FOLDER, 
-                input_path
-            ], check=True, timeout=40)
+            await status.delete()
+            os.remove(input_path)
+            os.remove(out_path)
+    except Exception as e:
+        await message.answer(f"❌ Error: {e}")
 
-            # Подготовка пути к PDF
-            output_name = os.path.splitext(os.path.basename(input_path))[0] + '.pdf'
-            output_path = os.path.join(OUTPUT_FOLDER, output_name)
-
-            if os.path.exists(output_path):
-                # Отправка готового файла
-                await message.answer_document(
-                    FSInputFile(output_path), 
-                    caption=f"✅ Done! (Gotowe / Готово)"
-                )
-                
-                # --- УВЕДОМЛЕНИЕ В n8n (для системы отзывов) ---
-                try:
-                    payload = {
-                        "user_id": message.from_user.id,
-                        "username": message.from_user.username,
-                        "language": message.from_user.language_code,
-                        "filename": safe_name,
-                        "timestamp": datetime.now().isoformat()
-                    }
-                    requests.post(N8N_WEBHOOK_URL, json=payload, timeout=1)
-                except:
-                    pass # Игнорируем ошибки n8n, чтобы не мешать пользователю
-                
-                await status_msg.delete()
-                
-                # Очистка за собой
-                os.remove(input_path)
-                os.remove(output_path)
-            else:
-                raise Exception("PDF file not found after conversion")
-
-        except Exception as e:
-            print(f"Error: {e}")
-            await message.answer("❌ Error! (Błąd / Помилка)")
-
-# --- МАРШРУТЫ ДЛЯ FLY.IO И WEBHOOK ---
+# Обработка нажатия на кнопки
+@dp.callback_query(F.data.startswith('rate_'))
+async def process_rating(callback: types.CallbackQuery):
+    _, rating, filename = callback.data.split('_', 2)
+    
+    # Отправка в Google Таблицу
+    payload = {
+        "user_id": callback.from_user.id,
+        "username": callback.from_user.username or "N/A",
+        "rating": rating,
+        "filename": filename
+    }
+    try:
+        requests.post(GOOGLE_SHEET_URL, json=payload, timeout=5)
+        await callback.answer("Dziękuję! / Дякую! / Thank you!")
+        await callback.message.edit_text(f"⭐ Twoja ocena: {rating}. Спасибо!")
+    except:
+        await callback.answer("Saved (Offline)")
 
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
@@ -118,13 +100,7 @@ def telegram_webhook():
     return "OK", 200
 
 @app.route('/health')
-def health():
-    return "OK", 200
-
-@app.route('/')
-def index():
-    return "CV Bot is alive", 200
+def health(): return "OK", 200
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
