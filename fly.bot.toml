@@ -9,7 +9,20 @@ app = "cv-konwerter-bot"
   auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 1
-
+  # ДОБАВЬ ЭТИ СТРОКИ ↓
+  [http_service]
+    internal_port = 8080
+    force_https = true
+    auto_stop_machines = true
+    auto_start_machines = true
+    min_machines_running = 1
+    # ДОБАВЬ ЭТИ СТРОКИ ↓
+    [http_service]
+      internal_port = 8080
+      force_https = true
+      auto_stop_machines = true
+      auto_start_machines = true
+      min_machines_running = 1
 [http_service.checks]
   interval = "15s"
   timeout = "10s"
