@@ -26,14 +26,9 @@ async def main():
 
     await bot.set_webhook(url=f"{APP_URL}/webhook")
 
-    # ЗАПУСК: Слушаем на 0.0.0.0 и порту 8080
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", 8080)
-    await site.start()
-    
-    print("SERVER STARTED ON PORT 8080")
-    await asyncio.Event().wait()
+    # ЗАПУСК: Используем web.run_app для автоматической настройки портов Fly.io
+    port = int(os.environ.get("PORT", 8080))
+    web.run_app(app, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
