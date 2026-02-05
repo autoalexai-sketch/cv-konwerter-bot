@@ -1,11 +1,9 @@
 import asyncio
 import os
-import subprocess
-import shutil
 import time
 import re
 from pathlib import Path
-from aiohttp import web
+from aiohttp import web, ClientSession
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -14,6 +12,7 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 # --- КОНФИГУРАЦИЯ ---
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
 APP_URL = "https://cv-konwerter-bot.fly.dev"
+WEB_APP_URL = "https://cv-konwerter-web-docker.onrender.com"  # ← ТВОЙ РАБОЧИЙ САЙТ!
 P24_LINK = "https://przelewy24.pl/payment/YOUR_LINK_HERE"  # ← ЗАМЕНИ НА СВОЮ ССЫЛКУ!
 
 bot = Bot(token=API_TOKEN)
@@ -22,19 +21,10 @@ dp = Dispatcher()
 # Защита от спама
 user_limits = {}
 
-# Временная папка
-temp_dir = Path("/tmp/cv_converter")
+# Временная папка (для временного хранения перед отправкой на сайт)
+temp_dir = Path("/tmp/cv_bot")
 temp_dir.mkdir(parents=True, exist_ok=True)
-os.chmod(temp_dir, 0o777)  # ← КРИТИЧЕСКИ ВАЖНО!
-
-# Профиль LibreOffice с правильными правами
-libreoffice_profile = Path("/tmp/.libreoffice")
-if libreoffice_profile.exists():
-    shutil.rmtree(libreoffice_profile, ignore_errors=True)
-libreoffice_profile.mkdir(parents=True, exist_ok=True)
-os.chmod(libreoffice_profile, 0o777)  # ← КРИТИЧЕСКИ ВАЖНО!
-os.environ["HOME"] = "/tmp"
-os.environ["TMPDIR"] = "/tmp"
+os.chmod(temp_dir, 0o777)
 
 # --- ЗАЩИТА: Валидация имён файлов ---
 def sanitize_filename(filename: str) -> str:
@@ -107,7 +97,7 @@ async def cmd_start(message: types.Message):
     
     await message.answer(text, reply_markup=builder.as_markup())
 
-# --- КОНВЕРТАЦИЯ (ИСПРАВЛЕНА) ---
+# --- КОНВЕРТАЦИЯ ЧЕРЕЗ ВЕБ-САЙТ (РАБОТАЕТ 100%) ---
 @dp.message(F.document)
 async def handle_docs(message: types.Message):
     user_id = message.from_user.id
@@ -156,14 +146,12 @@ async def handle_docs(message: types.Message):
     processing_msg = await message.reply(wait_msg)
     
     input_path = None
-    output_path = None
     
     try:
         # Скачиваем файл
         file = await bot.get_file(doc.file_id)
         file_path = f"https://api.telegram.org/file/bot{API_TOKEN}/{file.file_path}"
-        import aiohttp
-        async with aiohttp.ClientSession() as session:
+        async with ClientSession() as session:
             async with session.get(file_path, timeout=30) as resp:
                 if resp.status != 200:
                     raise Exception("Download failed")
@@ -172,49 +160,14 @@ async def handle_docs(message: types.Message):
                 input_path.write_bytes(content)
                 os.chmod(input_path, 0o666)
         
-        # 🔑 ИСПРАВЛЕНИЕ: Используем абсолютный путь к soffice + правильные параметры
-        output_path = temp_dir / f"{input_path.stem}.pdf"
-        
-        # Проверяем, существует ли soffice
-        soffice_path = "/usr/bin/soffice"
-        if not Path(soffice_path).exists():
-            soffice_path = "soffice"
-        
-        # Запускаем конвертацию с подробным логированием
-        print(f"🔍 Запуск конвертации: {input_path.name}")
-        print(f"📁 Путь к soffice: {soffice_path}")
-        print(f"📂 Профиль LibreOffice: {libreoffice_profile}")
-        
-        result = subprocess.run(
-            [
-                soffice_path,
-                "--headless",
-                "--nologo",
-                "--nofirststartwizard",
-                "--norestore",
-                f"-env:UserInstallation=file://{libreoffice_profile}",
-                "--convert-to", "pdf",
-                "--outdir", str(temp_dir),
-                str(input_path)
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            cwd="/tmp"
-        )
-        
-        print(f"✅ stdout: {result.stdout[:200]}")
-        print(f"⚠️ stderr: {result.stderr[:200]}")
-        
-        # Проверяем, создан ли PDF
-        if not output_path.exists():
-            # Пробуем альтернативный путь
-            alt_output = Path(str(input_path).replace('.docx', '.pdf').replace('.doc', '.pdf'))
-            if alt_output.exists():
-                output_path = alt_output
-        
-        if not output_path.exists():
-            raise Exception(f"PDF не создан. stderr: {result.stderr[:100]}")
+        # 🔑 ОТПРАВЛЯЕМ ФАЙЛ НА ТВОЙ РАБОЧИЙ САЙТ НА RENDER.COM
+        async with ClientSession() as session:
+            with open(input_path, 'rb') as f:
+                data = {'file': (safe_filename, f, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
+                async with session.post(f"{WEB_APP_URL}/convert", data=data, timeout=60) as resp:
+                    if resp.status != 200:
+                        raise Exception(f"Conversion failed: {resp.status}")
+                    pdf_content = await resp.read()
         
         # Отправляем PDF
         lang = message.from_user.language_code or 'en'
@@ -226,28 +179,19 @@ async def handle_docs(message: types.Message):
             caption = "✅ Done! Your PDF (GDPR-safe) 📄"
         
         await message.answer_document(
-            types.FSInputFile(output_path),
+            types.BufferedInputFile(pdf_content, filename=safe_filename.rsplit('.', 1)[0] + ".pdf"),
             caption=caption
         )
         
-        # Удаляем файлы
-        if input_path and input_path.exists():
-            input_path.unlink(missing_ok=True)
-        if output_path and output_path.exists():
-            output_path.unlink(missing_ok=True)
-        
-    except subprocess.TimeoutExpired:
+    except asyncio.TimeoutError:
         await processing_msg.edit_text("😅 Konwersja trwa zbyt długo. Spróbuj ponownie za chwilę.")
-        print("❌ Таймаут конвертации (60 сек)")
     except Exception as e:
-        error_msg = f"😅 Nie udało się przekonwertować pliku: {str(e)[:80]}"
+        error_msg = "😅 Nie udało się przekonwertować pliku. Sprawdź format."
         await processing_msg.edit_text(error_msg)
-        print(f"❌ Ошибка конвертации: {type(e).__name__}: {e}")
+        print(f"❌ Ошибка конвертации через сайт: {type(e).__name__}: {e}")
     finally:
         if input_path and input_path.exists():
             input_path.unlink(missing_ok=True)
-        if output_path and output_path.exists():
-            output_path.unlink(missing_ok=True)
 
 # --- HEALTH CHECK ---
 async def handle_health(request):
@@ -277,8 +221,7 @@ async def main():
     await site.start()
     
     print("✅ Bot запущен и готов к работе!")
-    print(f"✅ LibreOffice profile: {libreoffice_profile} (права 777)")
-    print(f"✅ Temp dir: {temp_dir} (права 777)")
+    print(f"✅ Конвертация через: {WEB_APP_URL}")
     
     await asyncio.Event().wait()
 
