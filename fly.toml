@@ -15,10 +15,10 @@ primary_region = 'ams'
   processes = ['app']
 
 [[http_service.checks]]
-  interval = "15s"
-  timeout = "10s"
-  grace_period = "30s"
+  grace_period = "60s"   # Дадим боту минуту на запуск
+  interval = "30s"
   method = "GET"
+  timeout = "5s"
   path = "/"
 
 [vm]
