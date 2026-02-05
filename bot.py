@@ -29,6 +29,7 @@ temp_dir.mkdir(parents=True, exist_ok=True)
 # LibreOffice profile directory (КРИТИЧЕСКИ ВАЖНО для Fly.io!)
 libreoffice_profile = Path("/tmp/.libreoffice")
 libreoffice_profile.mkdir(parents=True, exist_ok=True)
+os.chmod(libreoffice_profile, 0o777)  # ← ЭТА СТРОКА РЕШАЕТ ПРОБЛЕМУ!
 os.environ["HOME"] = "/tmp"
 
 # --- ЗАЩИТА: Валидация имён файлов ---
