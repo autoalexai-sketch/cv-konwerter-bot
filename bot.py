@@ -20,74 +20,56 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
 # Защита от спама: максимум 5 файлов/минуту на пользователя
-user_limits = {}  # {user_id: (timestamp, count)}
+user_limits = {}
 
 # Временная папка для файлов
-temp_dir = Path("temp")
-if temp_dir.exists():
-    shutil.rmtree(temp_dir, ignore_errors=True)
-temp_dir.mkdir(exist_ok=True)
+temp_dir = Path("/tmp/cv_converter")
+temp_dir.mkdir(parents=True, exist_ok=True)
 
-# --- ЗАЩИТА: Валидация имён файлов (защита от path traversal) ---
+# LibreOffice profile directory (КРИТИЧЕСКИ ВАЖНО для Fly.io!)
+libreoffice_profile = Path("/tmp/.libreoffice")
+libreoffice_profile.mkdir(parents=True, exist_ok=True)
+os.environ["HOME"] = "/tmp"
+
+# --- ЗАЩИТА: Валидация имён файлов ---
 def sanitize_filename(filename: str) -> str:
-    """Удаляет опасные символы из имени файла"""
-    # Разрешаем только буквы, цифры, точки, дефисы, подчёркивания
     safe_name = re.sub(r'[^a-zA-Z0-9._\-]', '_', filename)
-    # Убираем точки в начале (защита от ../)
     safe_name = safe_name.lstrip('.')
-    # Ограничиваем длину
     return safe_name[:100] or "file"
 
-# --- ЗАЩИТА: Проверка лимита файлов (защита от спама) ---
+# --- ЗАЩИТА: Проверка лимита файлов ---
 def check_user_limit(user_id: int) -> bool:
-    """Возвращает True если пользователь может отправить файл"""
     now = time.time()
     if user_id not in user_limits:
         user_limits[user_id] = (now, 1)
         return True
     
     last_time, count = user_limits[user_id]
-    
-    # Если прошла минута — сбрасываем счётчик
     if now - last_time > 60:
         user_limits[user_id] = (now, 1)
         return True
     
-    # Если больше 5 файлов за минуту — блокируем
     if count >= 5:
         return False
     
-    # Увеличиваем счётчик
     user_limits[user_id] = (last_time, count + 1)
     return True
 
-# --- ЗАЩИТА: Фоновая очистка старых файлов (>24 часа) ---
+# --- ЗАЩИТА: Фоновая очистка старых файлов ---
 async def cleanup_old_files():
-    """Автоматически удаляет файлы старше 24 часов (защита RODO + безопасность)"""
     while True:
         try:
             now = time.time()
             deleted = 0
-            
-            # Удаляем старые .docx
-            for file in temp_dir.glob("*.docx"):
+            for file in temp_dir.glob("*.*"):
                 if file.stat().st_mtime < now - 24 * 3600:
                     file.unlink(missing_ok=True)
                     deleted += 1
-            
-            # Удаляем старые .pdf
-            for file in temp_dir.glob("*.pdf"):
-                if file.stat().st_mtime < now - 24 * 3600:
-                    file.unlink(missing_ok=True)
-                    deleted += 1
-            
             if deleted > 0:
                 print(f"🧹 Очищено {deleted} старых файлов (>24ч)")
-            
         except Exception as e:
             print(f"⚠️ Ошибка очистки: {e}")
-        
-        await asyncio.sleep(3600)  # Проверяем каждый час
+        await asyncio.sleep(3600)
 
 # --- ПРИВЕТСТВИЕ С КОНВЕРТАЦИЕЙ CV ---
 @dp.message(Command("start"))
@@ -124,12 +106,11 @@ async def cmd_start(message: types.Message):
     
     await message.answer(text, reply_markup=builder.as_markup())
 
-# --- КОНВЕРТАЦИЯ ФАЙЛОВ (с полной защитой) ---
+# --- КОНВЕРТАЦИЯ ФАЙЛОВ (ИСПРАВЛЕНА) ---
 @dp.message(F.document)
 async def handle_docs(message: types.Message):
     user_id = message.from_user.id
     
-    # 🔒 ЗАЩИТА 1: Проверка лимита файлов (спам)
     if not check_user_limit(user_id):
         lang = message.from_user.language_code or 'en'
         if lang.startswith('pl'):
@@ -142,7 +123,6 @@ async def handle_docs(message: types.Message):
     
     doc = message.document
     
-    # 🔒 ЗАЩИТА 2: Валидация расширения (только .doc/.docx)
     if not doc.file_name or not doc.file_name.lower().endswith(('.doc', '.docx')):
         lang = message.from_user.language_code or 'en'
         if lang.startswith('pl'):
@@ -153,7 +133,6 @@ async def handle_docs(message: types.Message):
             await message.reply("📄 Only .doc or .docx files, please.")
         return
     
-    # 🔒 ЗАЩИТА 3: Ограничение размера (15 МБ)
     if doc.file_size and doc.file_size > 15 * 1024 * 1024:
         lang = message.from_user.language_code or 'en'
         if lang.startswith('pl'):
@@ -164,10 +143,8 @@ async def handle_docs(message: types.Message):
             await message.reply("📄 File too big (max 15 MB).")
         return
     
-    # 🔒 ЗАЩИТА 4: Валидация имени файла (защита от path traversal)
     safe_filename = sanitize_filename(doc.file_name)
     
-    # Сообщение о начале конвертации
     lang = message.from_user.language_code or 'en'
     if lang.startswith('pl'):
         wait_msg = "⏳ Konwertuję do PDF..."
@@ -193,13 +170,23 @@ async def handle_docs(message: types.Message):
                 input_path = temp_dir / f"{user_id}_{int(time.time())}_{safe_filename}"
                 input_path.write_bytes(content)
         
-        # 🔒 ЗАЩИТА 5: Таймаут конвертации (30 сек)
+        # 🔑 КРИТИЧЕСКИ ВАЖНО: правильные параметры LibreOffice для Fly.io
         output_path = temp_dir / f"{input_path.stem}.pdf"
         result = subprocess.run(
-            ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(temp_dir), str(input_path)],
+            [
+                "soffice",
+                "--headless",
+                "--nologo",
+                "--nofirststartwizard",
+                "--norestore",
+                f"-env:UserInstallation=file://{libreoffice_profile}",
+                "--convert-to", "pdf",
+                "--outdir", str(temp_dir),
+                str(input_path)
+            ],
             capture_output=True,
             text=True,
-            timeout=60,  # Защита от зависания
+            timeout=60,  # Увеличен до 60 секунд
             check=True
         )
         
@@ -217,22 +204,20 @@ async def handle_docs(message: types.Message):
             caption=caption
         )
         
-        # 🔒 ЗАЩИТА 6: Удаление файлов после отправки (соответствие RODO)
+        # Удаляем файлы
         if input_path and input_path.exists():
             input_path.unlink(missing_ok=True)
         if output_path and output_path.exists():
             output_path.unlink(missing_ok=True)
         
     except subprocess.TimeoutExpired:
-        await processing_msg.edit_text("😅 Konwersja trwa zbyt długo. Spróbuj mniejszego pliku.")
+        await processing_msg.edit_text("😅 Konwersja trwa zbyt długo. Spróbuj ponownie za chwilę.")
     except subprocess.CalledProcessError as e:
         await processing_msg.edit_text("😅 Nie udało się przekonwertować pliku. Sprawdź format.")
     except Exception as e:
-        # 🔒 ЗАЩИТА 7: Без утечки информации об ошибках
         await processing_msg.edit_text("😅 Coś poszło nie tak... Spróbuj później.")
-        print(f"⚠️ Внутренняя ошибка (не показана пользователю): {type(e).__name__}: {e}")
+        print(f"⚠️ Внутренняя ошибка: {type(e).__name__}: {e}")
     finally:
-        # 🔒 ЗАЩИТА 8: Гарантированная очистка даже при ошибках
         if input_path and input_path.exists():
             input_path.unlink(missing_ok=True)
         if output_path and output_path.exists():
@@ -240,17 +225,12 @@ async def handle_docs(message: types.Message):
 
 # --- HEALTH CHECK ДЛЯ FLY.IO ---
 async def handle_health(request):
-    # Проверяем, что временная папка существует
     if not temp_dir.exists():
         return web.Response(text="ERROR: temp dir missing", status=500)
     return web.Response(text="OK", status=200, content_type='text/plain')
 
 async def handle_index(request):
-    return web.Response(
-        text="CV Konwerter Bot is running!\n",
-        status=200,
-        content_type='text/plain'
-    )
+    return web.Response(text="CV Konwerter Bot is running!\n", status=200, content_type='text/plain')
 
 # --- ЗАПУСК БОТА ---
 async def main():
@@ -262,13 +242,10 @@ async def main():
     webhook_handler.register(app, path="/webhook")
     setup_application(app, dp, bot=bot)
     
-    # Устанавливаем webhook
     await bot.set_webhook(url=f"{APP_URL}/webhook", drop_pending_updates=True)
     
-    # Запуск фоновой очистки
     asyncio.create_task(cleanup_old_files())
     
-    # Запускаем сервер
     runner = web.AppRunner(app)
     await runner.setup()
     port = int(os.environ.get("PORT", 8080))
@@ -276,9 +253,8 @@ async def main():
     await site.start()
     
     print(f"✅ Bot running on port {port}")
-    print(f"✅ Webhook: {APP_URL}/webhook")
-    print(f"✅ RODO protection: files deleted after conversion + 24h cleanup")
-    print(f"✅ Security: spam protection, path traversal protection, size limits")
+    print(f"✅ LibreOffice profile: {libreoffice_profile}")
+    print(f"✅ Temp dir: {temp_dir}")
     
     await asyncio.Event().wait()
 
