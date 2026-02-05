@@ -15,6 +15,7 @@ def index():
 
 @app.route('/convert', methods=['POST'])
 def convert():
+    # Обработка запросов ОТ БОТА и ОТ САЙТА
     file = request.files.get('file')
     if file and file.filename.lower().endswith(('.docx', '.doc')):
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -31,7 +32,7 @@ def convert():
             
             output_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{timestamp}_{os.path.splitext(file.filename)[0]}.pdf')
             
-            # 🔑 КРИТИЧЕСКИ ВАЖНО: правильные заголовки для скачивания
+            # ВАЖНО: правильные заголовки для скачивания И для бота
             return send_file(
                 output_path, 
                 as_attachment=True,
@@ -41,7 +42,6 @@ def convert():
         except Exception as e:
             return f"Błąd konwersji: {str(e)[:100]}", 500
         finally:
-            # Удаляем временные файлы (соответствие RODO)
             if os.path.exists(input_path):
                 os.remove(input_path)
             if os.path.exists(output_path):
