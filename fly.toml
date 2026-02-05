@@ -19,7 +19,7 @@ primary_region = 'ams'
   timeout = "10s"
   grace_period = "30s"
   method = "GET"
-  path = "/health"
+  path = "/"
 
 [vm]
   memory = '1gb'
