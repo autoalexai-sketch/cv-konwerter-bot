@@ -1,3 +1,4 @@
+import logging
 import asyncio
 import os
 import subprocess
@@ -9,14 +10,19 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
-# --- КРИТИЧЕСКИ ВАЖНО: УБРАТЬ ВСЕ ПРОБЕЛЫ В КОНЦЕ СТРОК! ---
+# --- ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# --- КОНФИГУРАЦИЯ ---
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
-APP_URL = "https://cv-konwerter-bot.fly.dev"  # ← НЕТ ПРОБЕЛОВ В КОНЦЕ!
-P24_LINK = "https://przelewy24.pl/payment/YOUR_LINK_HERE"  # ← НЕТ ПРОБЕЛОВ В КОНЦЕ!
+APP_URL = "https://cv-konwerter-bot.fly.dev"
+P24_LINK = "https://przelewy24.pl/payment/YOUR_LINK_HERE"  # ← ЗАМЕНИ НА СВОЮ ССЫЛКУ!
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
+# --- ВРЕМЕННЫЕ ПАПКИ ---
 temp_dir = Path("/tmp/cv_bot")
 temp_dir.mkdir(parents=True, exist_ok=True)
 os.chmod(temp_dir, 0o777)
@@ -27,6 +33,7 @@ os.chmod(libreoffice_profile, 0o777)
 os.environ["HOME"] = "/tmp"
 os.environ["TMPDIR"] = "/tmp"
 
+# --- КОМАНДА /start ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     lang = message.from_user.language_code or 'en'
@@ -59,6 +66,7 @@ async def cmd_start(message: types.Message):
     builder.row(types.InlineKeyboardButton(text=btn_text, url=P24_LINK))
     await message.answer(text, reply_markup=builder.as_markup())
 
+# --- ОБРАБОТКА ФАЙЛОВ ---
 @dp.message(F.document)
 async def handle_docs(message: types.Message):
     doc = message.document
@@ -96,8 +104,8 @@ async def handle_docs(message: types.Message):
     
     try:
         file = await bot.get_file(doc.file_id)
-        # 🔑 КРИТИЧЕСКИ ВАЖНО: УБРАТЬ ПРОБЕЛЫ ПОСЛЕ "bot"!
-        file_path = f"https://api.telegram.org/file/bot{API_TOKEN}/{file.file_path}"  # ← НЕТ ПРОБЕЛОВ ПОСЛЕ "bot"!
+        # 🔑 КРИТИЧЕСКИ ВАЖНО: НЕТ ПРОБЕЛОВ ПОСЛЕ "bot"!
+        file_path = f"https://api.telegram.org/file/bot{API_TOKEN}/{file.file_path}"
         import aiohttp
         async with aiohttp.ClientSession() as session:
             async with session.get(file_path, timeout=30) as resp:
@@ -147,20 +155,24 @@ async def handle_docs(message: types.Message):
         await processing_msg.edit_text("😅 Konwersja trwa zbyt długo. Spróbuj ponownie za chwilę.")
     except Exception as e:
         await processing_msg.edit_text(f"😅 Nie udało się przekonwertować pliku.")
-        print(f"❌ Ошибка: {type(e).__name__}: {e}")
+        logger.error(f"❌ Ошибка конвертации: {type(e).__name__}: {e}")
     finally:
         if input_path and input_path.exists():
             input_path.unlink(missing_ok=True)
         if output_path and output_path.exists():
             output_path.unlink(missing_ok=True)
 
+# --- HEALTH CHECK ---
 async def handle_health(request):
     return web.Response(text="OK", status=200, content_type='text/plain')
 
 async def handle_index(request):
     return web.Response(text="CV Konwerter Bot is running!\n", status=200, content_type='text/plain')
 
+# --- ЗАПУСК БОТА ---
 async def main():
+    logger.info("🚀 Запуск бота...")
+    
     app = web.Application()
     app.router.add_get('/', handle_index)
     app.router.add_get('/health', handle_health)
@@ -176,10 +188,14 @@ async def main():
     site = web.TCPSite(runner, "0.0.0.0", 8080)
     await site.start()
     
-    print("✅ Bot запущен и готов к работе!")
-    print(f"✅ Слушает порт 8080")
-    print(f"✅ Webhook: {APP_URL}/webhook")
+    logger.info("✅ Bot запущен и готов к работе!")
+    logger.info(f"✅ Слушает порт 8080")
+    logger.info(f"✅ Webhook: {APP_URL}/webhook")
+    
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger.error(f"❌ Критическая ошибка при запуске: {type(e).__name__}: {e}")
