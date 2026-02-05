@@ -9,10 +9,10 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
-# --- КРИТИЧЕСКИ ВАЖНО: УБРАТЬ ПРОБЕЛЫ В URL ---
+# --- КРИТИЧЕСКИ ВАЖНО: УБРАТЬ ВСЕ ПРОБЕЛЫ В КОНЦЕ СТРОК! ---
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
-APP_URL = "https://cv-konwerter-bot.fly.dev"  # ← УБРАЛ ПРОБЕЛЫ В КОНЦЕ!
-P24_LINK = "https://przelewy24.pl/payment/YOUR_LINK_HERE"  # ← УБРАЛ ПРОБЕЛЫ В КОНЦЕ!
+APP_URL = "https://cv-konwerter-bot.fly.dev"  # ← НЕТ ПРОБЕЛОВ В КОНЦЕ!
+P24_LINK = "https://przelewy24.pl/payment/YOUR_LINK_HERE"  # ← НЕТ ПРОБЕЛОВ В КОНЦЕ!
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
@@ -97,7 +97,7 @@ async def handle_docs(message: types.Message):
     try:
         file = await bot.get_file(doc.file_id)
         # 🔑 КРИТИЧЕСКИ ВАЖНО: УБРАТЬ ПРОБЕЛЫ ПОСЛЕ "bot"!
-        file_path = f"https://api.telegram.org/file/bot{API_TOKEN}/{file.file_path}"
+        file_path = f"https://api.telegram.org/file/bot{API_TOKEN}/{file.file_path}"  # ← НЕТ ПРОБЕЛОВ ПОСЛЕ "bot"!
         import aiohttp
         async with aiohttp.ClientSession() as session:
             async with session.get(file_path, timeout=30) as resp:
@@ -173,11 +173,11 @@ async def main():
     
     runner = web.AppRunner(app)
     await runner.setup()
-    # 🔑 КРИТИЧЕСКИ ВАЖНО: ЯВНО УКАЗАТЬ ПОРТ 8080 ДЛЯ FLY.IO
     site = web.TCPSite(runner, "0.0.0.0", 8080)
     await site.start()
     
     print("✅ Bot запущен и готов к работе!")
+    print(f"✅ Слушает порт 8080")
     print(f"✅ Webhook: {APP_URL}/webhook")
     await asyncio.Event().wait()
 
