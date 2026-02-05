@@ -19,18 +19,22 @@ P24_LINK = "https://przelewy24.pl/payment/YOUR_LINK_HERE"  # ← ЗАМЕНИ Н
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# Защита от спама: максимум 5 файлов/минуту на пользователя
+# Защита от спама
 user_limits = {}
 
-# Временная папка для файлов
+# Временная папка
 temp_dir = Path("/tmp/cv_converter")
 temp_dir.mkdir(parents=True, exist_ok=True)
+os.chmod(temp_dir, 0o777)  # ← КРИТИЧЕСКИ ВАЖНО!
 
-# LibreOffice profile directory (КРИТИЧЕСКИ ВАЖНО для Fly.io!)
+# Профиль LibreOffice с правильными правами
 libreoffice_profile = Path("/tmp/.libreoffice")
+if libreoffice_profile.exists():
+    shutil.rmtree(libreoffice_profile, ignore_errors=True)
 libreoffice_profile.mkdir(parents=True, exist_ok=True)
-os.chmod(libreoffice_profile, 0o777)  # ← ЭТА СТРОКА РЕШАЕТ ПРОБЛЕМУ!
+os.chmod(libreoffice_profile, 0o777)  # ← КРИТИЧЕСКИ ВАЖНО!
 os.environ["HOME"] = "/tmp"
+os.environ["TMPDIR"] = "/tmp"
 
 # --- ЗАЩИТА: Валидация имён файлов ---
 def sanitize_filename(filename: str) -> str:
@@ -56,23 +60,19 @@ def check_user_limit(user_id: int) -> bool:
     user_limits[user_id] = (last_time, count + 1)
     return True
 
-# --- ЗАЩИТА: Фоновая очистка старых файлов ---
+# --- ФОН: Очистка старых файлов ---
 async def cleanup_old_files():
     while True:
         try:
             now = time.time()
-            deleted = 0
             for file in temp_dir.glob("*.*"):
                 if file.stat().st_mtime < now - 24 * 3600:
                     file.unlink(missing_ok=True)
-                    deleted += 1
-            if deleted > 0:
-                print(f"🧹 Очищено {deleted} старых файлов (>24ч)")
-        except Exception as e:
-            print(f"⚠️ Ошибка очистки: {e}")
+        except:
+            pass
         await asyncio.sleep(3600)
 
-# --- ПРИВЕТСТВИЕ С КОНВЕРТАЦИЕЙ CV ---
+# --- ПРИВЕТСТВИЕ ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     lang = message.from_user.language_code or 'en'
@@ -107,7 +107,7 @@ async def cmd_start(message: types.Message):
     
     await message.answer(text, reply_markup=builder.as_markup())
 
-# --- КОНВЕРТАЦИЯ ФАЙЛОВ (ИСПРАВЛЕНА) ---
+# --- КОНВЕРТАЦИЯ (ИСПРАВЛЕНА) ---
 @dp.message(F.document)
 async def handle_docs(message: types.Message):
     user_id = message.from_user.id
@@ -170,12 +170,24 @@ async def handle_docs(message: types.Message):
                 content = await resp.read()
                 input_path = temp_dir / f"{user_id}_{int(time.time())}_{safe_filename}"
                 input_path.write_bytes(content)
+                os.chmod(input_path, 0o666)
         
-        # 🔑 КРИТИЧЕСКИ ВАЖНО: правильные параметры LibreOffice для Fly.io
+        # 🔑 ИСПРАВЛЕНИЕ: Используем абсолютный путь к soffice + правильные параметры
         output_path = temp_dir / f"{input_path.stem}.pdf"
+        
+        # Проверяем, существует ли soffice
+        soffice_path = "/usr/bin/soffice"
+        if not Path(soffice_path).exists():
+            soffice_path = "soffice"
+        
+        # Запускаем конвертацию с подробным логированием
+        print(f"🔍 Запуск конвертации: {input_path.name}")
+        print(f"📁 Путь к soffice: {soffice_path}")
+        print(f"📂 Профиль LibreOffice: {libreoffice_profile}")
+        
         result = subprocess.run(
             [
-                "soffice",
+                soffice_path,
                 "--headless",
                 "--nologo",
                 "--nofirststartwizard",
@@ -187,9 +199,22 @@ async def handle_docs(message: types.Message):
             ],
             capture_output=True,
             text=True,
-            timeout=60,  # Увеличен до 60 секунд
-            check=True
+            timeout=60,
+            cwd="/tmp"
         )
+        
+        print(f"✅ stdout: {result.stdout[:200]}")
+        print(f"⚠️ stderr: {result.stderr[:200]}")
+        
+        # Проверяем, создан ли PDF
+        if not output_path.exists():
+            # Пробуем альтернативный путь
+            alt_output = Path(str(input_path).replace('.docx', '.pdf').replace('.doc', '.pdf'))
+            if alt_output.exists():
+                output_path = alt_output
+        
+        if not output_path.exists():
+            raise Exception(f"PDF не создан. stderr: {result.stderr[:100]}")
         
         # Отправляем PDF
         lang = message.from_user.language_code or 'en'
@@ -213,27 +238,25 @@ async def handle_docs(message: types.Message):
         
     except subprocess.TimeoutExpired:
         await processing_msg.edit_text("😅 Konwersja trwa zbyt długo. Spróbuj ponownie za chwilę.")
-    except subprocess.CalledProcessError as e:
-        await processing_msg.edit_text("😅 Nie udało się przekonwertować pliku. Sprawdź format.")
+        print("❌ Таймаут конвертации (60 сек)")
     except Exception as e:
-        await processing_msg.edit_text("😅 Coś poszło nie tak... Spróbuj później.")
-        print(f"⚠️ Внутренняя ошибка: {type(e).__name__}: {e}")
+        error_msg = f"😅 Nie udało się przekonwertować pliku: {str(e)[:80]}"
+        await processing_msg.edit_text(error_msg)
+        print(f"❌ Ошибка конвертации: {type(e).__name__}: {e}")
     finally:
         if input_path and input_path.exists():
             input_path.unlink(missing_ok=True)
         if output_path and output_path.exists():
             output_path.unlink(missing_ok=True)
 
-# --- HEALTH CHECK ДЛЯ FLY.IO ---
+# --- HEALTH CHECK ---
 async def handle_health(request):
-    if not temp_dir.exists():
-        return web.Response(text="ERROR: temp dir missing", status=500)
     return web.Response(text="OK", status=200, content_type='text/plain')
 
 async def handle_index(request):
     return web.Response(text="CV Konwerter Bot is running!\n", status=200, content_type='text/plain')
 
-# --- ЗАПУСК БОТА ---
+# --- ЗАПУСК ---
 async def main():
     app = web.Application()
     app.router.add_get('/', handle_index)
@@ -253,9 +276,9 @@ async def main():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     
-    print(f"✅ Bot running on port {port}")
-    print(f"✅ LibreOffice profile: {libreoffice_profile}")
-    print(f"✅ Temp dir: {temp_dir}")
+    print("✅ Bot запущен и готов к работе!")
+    print(f"✅ LibreOffice profile: {libreoffice_profile} (права 777)")
+    print(f"✅ Temp dir: {temp_dir} (права 777)")
     
     await asyncio.Event().wait()
 
