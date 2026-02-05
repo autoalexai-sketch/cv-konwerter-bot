@@ -1,39 +1,26 @@
-import logging
 import asyncio
 import os
-import subprocess
 import time
 from pathlib import Path
-from aiohttp import web
+from aiohttp import web, ClientSession
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
-# --- ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ ---
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # --- КОНФИГУРАЦИЯ ---
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
 APP_URL = "https://cv-konwerter-bot.fly.dev"
+WEB_APP_URL = "https://cv-konwerter-web-docker.onrender.com"  # ← ТВОЙ РАБОЧИЙ САЙТ!
 P24_LINK = "https://przelewy24.pl/payment/YOUR_LINK_HERE"  # ← ЗАМЕНИ НА СВОЮ ССЫЛКУ!
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# --- ВРЕМЕННЫЕ ПАПКИ ---
 temp_dir = Path("/tmp/cv_bot")
 temp_dir.mkdir(parents=True, exist_ok=True)
 os.chmod(temp_dir, 0o777)
 
-libreoffice_profile = Path("/tmp/.libreoffice")
-libreoffice_profile.mkdir(parents=True, exist_ok=True)
-os.chmod(libreoffice_profile, 0o777)
-os.environ["HOME"] = "/tmp"
-os.environ["TMPDIR"] = "/tmp"
-
-# --- КОМАНДА /start ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     lang = message.from_user.language_code or 'en'
@@ -66,7 +53,6 @@ async def cmd_start(message: types.Message):
     builder.row(types.InlineKeyboardButton(text=btn_text, url=P24_LINK))
     await message.answer(text, reply_markup=builder.as_markup())
 
-# --- ОБРАБОТКА ФАЙЛОВ ---
 @dp.message(F.document)
 async def handle_docs(message: types.Message):
     doc = message.document
@@ -100,44 +86,27 @@ async def handle_docs(message: types.Message):
     processing_msg = await message.reply(wait_msg)
     
     input_path = None
-    output_path = None
     
     try:
+        # Скачиваем файл от пользователя
         file = await bot.get_file(doc.file_id)
-        # 🔑 КРИТИЧЕСКИ ВАЖНО: НЕТ ПРОБЕЛОВ ПОСЛЕ "bot"!
         file_path = f"https://api.telegram.org/file/bot{API_TOKEN}/{file.file_path}"
-        import aiohttp
-        async with aiohttp.ClientSession() as session:
-            async with session.get(file_path, timeout=30) as resp:
+        async with ClientSession() as session:
+            async with session.get(file_path) as resp:
                 content = await resp.read()
                 input_path = temp_dir / f"{message.from_user.id}_{int(time.time())}_{doc.file_name}"
                 input_path.write_bytes(content)
-                os.chmod(input_path, 0o666)
         
-        output_path = temp_dir / f"{input_path.stem}.pdf"
+        # Отправляем файл на ТВОЙ РАБОЧИЙ САЙТ
+        async with ClientSession() as session:
+            with open(input_path, 'rb') as f:
+                data = {'file': (doc.file_name, f, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
+                async with session.post(f"{WEB_APP_URL}/convert", data=data, timeout=60) as resp:
+                    if resp.status != 200:
+                        raise Exception(f"Conversion failed: {resp.status}")
+                    pdf_content = await resp.read()
         
-        # Конвертация через LibreOffice
-        result = subprocess.run(
-            [
-                "soffice",
-                "--headless",
-                "--nologo",
-                "--nofirststartwizard",
-                "--norestore",
-                f"-env:UserInstallation=file://{libreoffice_profile}",
-                "--convert-to", "pdf",
-                "--outdir", str(temp_dir),
-                str(input_path)
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            cwd="/tmp"
-        )
-        
-        if not output_path.exists():
-            raise Exception("PDF nie został utworzony")
-        
+        # Отправляем PDF пользователю
         lang = message.from_user.language_code or 'en'
         if lang.startswith('pl'):
             caption = "✅ Gotowe! Twój PDF (zgodny z RODO/GDPR) 📄"
@@ -147,32 +116,23 @@ async def handle_docs(message: types.Message):
             caption = "✅ Done! Your PDF (GDPR-safe) 📄"
         
         await message.answer_document(
-            types.FSInputFile(output_path),
+            types.BufferedInputFile(pdf_content, filename=f"cv_{int(time.time())}.pdf"),
             caption=caption
         )
         
-    except subprocess.TimeoutExpired:
-        await processing_msg.edit_text("😅 Konwersja trwa zbyt długo. Spróbuj ponownie za chwilę.")
     except Exception as e:
-        await processing_msg.edit_text(f"😅 Nie udało się przekonwertować pliku.")
-        logger.error(f"❌ Ошибка конвертации: {type(e).__name__}: {e}")
+        await processing_msg.edit_text("😅 Nie udało się przekonwertować pliku. Spróbuj ponownie za chwilę.")
     finally:
         if input_path and input_path.exists():
             input_path.unlink(missing_ok=True)
-        if output_path and output_path.exists():
-            output_path.unlink(missing_ok=True)
 
-# --- HEALTH CHECK ---
 async def handle_health(request):
     return web.Response(text="OK", status=200, content_type='text/plain')
 
 async def handle_index(request):
     return web.Response(text="CV Konwerter Bot is running!\n", status=200, content_type='text/plain')
 
-# --- ЗАПУСК БОТА ---
 async def main():
-    logger.info("🚀 Запуск бота...")
-    
     app = web.Application()
     app.router.add_get('/', handle_index)
     app.router.add_get('/health', handle_health)
@@ -188,14 +148,9 @@ async def main():
     site = web.TCPSite(runner, "0.0.0.0", 8080)
     await site.start()
     
-    logger.info("✅ Bot запущен и готов к работе!")
-    logger.info(f"✅ Слушает порт 8080")
-    logger.info(f"✅ Webhook: {APP_URL}/webhook")
-    
+    print("✅ Bot gotowy do pracy!")
+    print(f"✅ Konwersja przez: {WEB_APP_URL}")
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"❌ Критическая ошибка при запуске: {type(e).__name__}: {e}")
+    asyncio.run(main())
