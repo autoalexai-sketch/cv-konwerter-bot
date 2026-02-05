@@ -16,7 +16,7 @@ async def handle_index(request):
 
 async def main():
     app = web.Application()
-    app.router.add_get('/', handle_index) # Убирает 404
+    app.router.add_get('/', handle_index) 
     
     webhook_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
     webhook_handler.register(app, path="/webhook")
@@ -24,17 +24,12 @@ async def main():
     
     await bot.set_webhook(url=f"{APP_URL}/webhook", drop_pending_updates=True)
 
-    # ПРАВИЛЬНЫЙ ЗАПУСК ДЛЯ FLY.IO:
+    # Упрощенный запуск для Fly.io
     runner = web.AppRunner(app)
     await runner.setup()
     port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, "0.0.0.0", port) # Слушаем ВСЕ адреса
-    
+    site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f"--- СЕРВЕР ЗАПУЩЕН НА ПОРТУ {port} ---")
     
-    # Это не дает программе закрыться
+    print(f"--- SERVER STARTED ON PORT {port} ---")
     await asyncio.Event().wait()
-
-if __name__ == "__main__":
-    asyncio.run(main())
