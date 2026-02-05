@@ -199,7 +199,7 @@ async def handle_docs(message: types.Message):
             ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(temp_dir), str(input_path)],
             capture_output=True,
             text=True,
-            timeout=30,  # Защита от зависания
+            timeout=60,  # Защита от зависания
             check=True
         )
         
