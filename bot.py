@@ -100,19 +100,31 @@ async def handle_docs(message: Message):
 # --- ENGINE (Исправляет ошибку порта на Fly.io) ---
 async def main():
     app = web.Application()
+    
+    # Сначала регистрируем главную страницу
     app.router.add_get('/', handle_index)
     
+    # Затем регистрируем вебхук
     webhook_requests_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
     webhook_requests_handler.register(app, path="/webhook")
     setup_application(app, dp, bot=bot)
     
+    # Удаляем старый вебхук и ставим новый
+    await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_webhook(url=f"{APP_URL}/webhook")
     
+    # Запуск сервера
     runner = web.AppRunner(app)
     await runner.setup()
-    # Ключевое изменение: слушаем 0.0.0.0 на порту из настроек Fly
-    site = web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", 8080)))
+    
+    # Важно: используем порт из окружения Fly.io
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    
+    print(f"Server starting on port {port}...")
     await site.start()
+    
+    # Бесконечный цикл ожидания
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
