@@ -16,12 +16,14 @@ async def handle_index(request):
 
 async def main():
     app = web.Application()
+    # Это лечит 404
     app.router.add_get('/', handle_index)
     
     webhook_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
     webhook_handler.register(app, path="/webhook")
     setup_application(app, dp, bot=bot)
     
+    # Установка вебхука
     await bot.set_webhook(url=f"{APP_URL}/webhook")
 
     # ЗАПУСК: Правильный асинхронный метод для Fly.io
@@ -31,9 +33,9 @@ async def main():
     site = web.TCPSite(runner, "0.0.0.0", port)
     
     await site.start()
-    print(f"SERVER STARTED ON PORT {port}")
+    print(f"--- SERVER STARTED ON PORT {port} ---")
     
-    # Держим бота запущенным
+    # Бесконечный цикл, чтобы бот не выключался
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
