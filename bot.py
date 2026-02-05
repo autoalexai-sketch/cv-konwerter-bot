@@ -41,7 +41,7 @@ async def handle_index(request):
             <h1>📄 CV Konwerter Bot</h1>
             <p>Konwertuj swoje CV z Word (DOCX) do PDF w kilka sekund bezpośrednio na Telegramie.</p>
             <p>Bezpiecznie, szybko i profesjonalnie.</p>
-            <a href="https://t.me/ВАШ_НИК_БОТА" class="btn">🚀 Rozpocznij w Telegram</a>
+            <a href="https://t.me/cv_konwerter_bot" class="btn">🚀 Rozpocznij w Telegram</a>
             <div class="lang">PL | EN | UA | EU Support</div>
         </div>
     </body>
