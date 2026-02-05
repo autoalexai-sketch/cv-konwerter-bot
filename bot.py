@@ -1,43 +1,65 @@
 import asyncio
 import os
 from aiohttp import web
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
-# --- НАСТРОЙКИ ---
+# --- КОНФИГУРАЦИЯ ---
 API_TOKEN = '8579290334:AAEkgqc24lCNWYPXfx6x-UxIoHcZOGrdLTo'
 APP_URL = "https://cv-konwerter-bot.fly.dev"
-# Твоя ссылка Przelewy24 (вставь актуальную)
-P24_LINK = "https://secure.przelewy24.pl/your_link_here" 
+P24_LINK = "https://secure.przelewy24.pl/your_actual_link" # ВСТАВЬ СВОЮ ССЫЛКУ
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# Приветствие на трех языках
+# --- ЛОГИКА БОТА ---
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    text = (
-        "Cześć! Wyślij mi swoje CV, aby zacząć. 🇵🇱\n"
-        "Hello! Send me your CV to get started. 🇬🇧\n"
-        "Привіт! Надішліть своє CV, щоб почати. 🇺🇦\n\n"
-        "Payment / Płatność / Оплата: /pay"
+    await message.answer(
+        "👋 Cześć! Wyślij mi swoje CV (PDF/DOCX), а я помогу перевести его или подготовить к оплате.\n"
+        "🇬🇧 Send me your CV to translate it.\n"
+        "💳 Оплата / Płatność: /pay"
     )
-    await message.answer(text)
 
-# Команда оплаты
 @dp.message(Command("pay"))
 async def cmd_pay(message: types.Message):
-    text = (
-        "To proceed with the payment, use the link below:\n"
-        "Aby przejść do płatności, skorzystaj z linku:\n\n"
-        f"{P24_LINK}"
-    )
-    await message.answer(text)
+    await message.answer(f"🔗 Link do płatności Przelewy24:\n{P24_LINK}")
 
-# Главная страница для проверки (Health Check)
+# Функция перевода (заглушка для логики перевода)
+@dp.message(F.document)
+async def handle_docs(message: types.Message):
+    await message.answer("📄 Документ получен! Начинаю перевод на польский/английский... (процесс запущен)")
+    # Здесь будет логика обработки файла (библиотека python-docx и т.д.)
+
+# --- ВЕБ-ИНТЕРФЕЙС (САЙТ) ---
+
 async def handle_index(request):
-    return web.Response(text="BOT ONLINE", content_type='text/html')
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CV Konwerter Bot</title>
+        <style>
+            body { font-family: sans-serif; text-align: center; padding-top: 50px; background: #f4f4f9; }
+            .card { background: white; padding: 20px; border-radius: 10px; display: inline-block; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            h1 { color: #2c3e50; }
+            p { color: #7f8c8d; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>🤖 CV Konwerter Bot</h1>
+            <p>Статус: <span style="color: green;">Online</span></p>
+            <p>Бот готов к работе на европейском рынке.</p>
+        </div>
+    </body>
+    </html>
+    """
+    return web.Response(text=html_content, content_type='text/html')
+
+# --- ЗАПУСК ---
 
 async def main():
     app = web.Application()
@@ -49,13 +71,14 @@ async def main():
     
     await bot.set_webhook(url=f"{APP_URL}/webhook", drop_pending_updates=True)
 
+    # ВАЖНО: Фикс для Fly.io (явное указание хоста 0.0.0.0)
     runner = web.AppRunner(app)
     await runner.setup()
     port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, "0.0.0.0", port)
+    site = web.TCPSite(runner, "0.0.0.0", port) 
     await site.start()
     
-    print(f"--- SERVER STARTED ON PORT {port} ---")
+    print(f"✅ Сервер запущен на порту {port}")
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
