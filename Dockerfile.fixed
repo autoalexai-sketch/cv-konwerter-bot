@@ -1,0 +1,11 @@
+# Dockerfile for LibreOffice Permission Fixes
+
+FROM libreoffice:latest
+
+# Set permissions for LibreOffice execution
+RUN chmod -R 755 /usr/bin/libreoffice 
+RUN chmod -R 755 /usr/share/LibreOffice/ 
+
+# Any additional setup commands can go here
+
+CMD ["/usr/bin/libreoffice"]
