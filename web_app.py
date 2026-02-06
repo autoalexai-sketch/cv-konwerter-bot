@@ -1,10 +1,9 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, jsonify
 import os
 import subprocess
 from datetime import datetime
 from pathlib import Path
 
-# Импорты для отправки писем
 try:
     from email_service_sendgrid import send_premium_cv_sendgrid
     EMAIL_SERVICE_AVAILABLE = True
@@ -19,12 +18,11 @@ app.config['TEMPLATES_FOLDER'] = 'templates_cv'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
-# --- ГЛАВНАЯ СТРАНИЦА ---
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# --- КОНВЕРТАЦИЯ ФАЙЛОВ (ОТ БОТА И САЙТА) ---
+# --- КОНВЕРТАЦИЯ ФАЙЛОВ (ВОЗВРАЩАЕМ ИМЯ ФАЙЛА) ---
 @app.route('/convert', methods=['POST'])
 def convert():
     file = request.files.get('file')
@@ -42,47 +40,61 @@ def convert():
             ], check=True, timeout=30)
             
             output_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{timestamp}_{os.path.splitext(file.filename)[0]}.pdf')
+            output_filename = f"cv_{timestamp}.pdf"
             
-            # ✅ Правильные заголовки для скачивания
-            return send_file(
-                output_path, 
-                as_attachment=True,
-                download_name=f"cv_{timestamp}.pdf",
-                mimetype="application/pdf"
-            )
+            # ✅ Возвращаем информацию о файле (не сам файл!)
+            return jsonify({
+                'success': True,
+                'filename': output_filename,
+                'download_url': f'/download/{timestamp}_{os.path.splitext(file.filename)[0]}.pdf'
+            })
         except Exception as e:
-            return f"Błąd konwersji: {str(e)[:100]}", 500
+            return jsonify({'success': False, 'error': f"Błąd konwersji: {str(e)[:100]}"}), 500
         finally:
             if os.path.exists(input_path):
                 os.remove(input_path)
-            if os.path.exists(output_path):
-                os.remove(output_path)
-    return "Nieprawidłowy plik", 400
+    return jsonify({'success': False, 'error': 'Nieprawidłowy plik'}), 400
 
-# --- ПРЕМИУМ: ОТПРАВКА ГОТОВЫХ ШАБЛОНОВ НА EMAIL ---
+# --- ЭНДПОИНТ ДЛЯ СКАЧИВАНИЯ ФАЙЛА ---
+@app.route('/download/<filename>')
+def download_file(filename):
+    file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
+    if os.path.exists(file_path):
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=f"cv_{filename}",
+            mimetype="application/pdf"
+        )
+    return "Plik nie istnieje", 404
+
+# --- ПРЕМИУМ: ОТПРАВКА ШАБЛОНОВ НА EMAIL (С ОТЛАДКОЙ) ---
 @app.route('/premium', methods=['POST'])
 def premium():
     try:
-        # Получаем данные из формы
         name = request.form.get('name', 'Anonim')
         email = request.form.get('email', '')
         phone = request.form.get('phone', '')
         city = request.form.get('city', 'Kraków')
         
-        # Валидация
-        if not email or '@' not in email:
-            return "Błąd: Nieprawidłowy email", 400
+        print(f"📧 Получен премиум-запрос: {name}, {email}, {city}")
         
-        # Пути к готовым шаблонам
+        if not email or '@' not in email:
+            print("❌ Ошибка: Неправильный email")
+            return jsonify({'success': False, 'error': 'Nieprawidłowy email'}), 400
+        
         cv_path = Path(app.config['TEMPLATES_FOLDER']) / 'CV_Kowalski_Jan_Klasyczny.docx'
         letter_path = Path(app.config['TEMPLATES_FOLDER']) / 'List_Motywacyjny_Kowalski_Jan.docx'
         
-        # Проверяем существование файлов
-        if not cv_path.exists():
-            return "Błąd: Szablon CV nie istnieje", 500
+        print(f"📄 Путь к шаблону резюме: {cv_path}")
+        print(f"📄 Путь к шаблону письма: {letter_path}")
         
-        # Отправляем письмо через существующую функцию
+        if not cv_path.exists():
+            print("❌ Ошибка: Шаблон резюме не найден")
+            return jsonify({'success': False, 'error': 'Szablon CV nie istnieje'}), 500
+        
         if EMAIL_SERVICE_AVAILABLE:
+            print(f"📤 Отправка письма через SendGrid на {email}")
             success = send_premium_cv_sendgrid(
                 recipient_email=email,
                 cv_path=str(cv_path),
@@ -91,16 +103,16 @@ def premium():
             )
             
             if success:
-                return """
-                <script>
-                    alert('✅ Dziękujemy! Twoje Premium CV zostało wysłane na email. Sprawdź skrzynkę (również SPAM).');
-                    window.location.href = '/';
-                </script>
-                """, 200
+                print("✅ Письмо успешно отправлено!")
+                return jsonify({
+                    'success': True,
+                    'message': '✅ Dziękujemy! Twoje Premium CV zostało wysłane na email. Sprawdź skrzynkę (również SPAM).'
+                })
             else:
-                return "Błąd: Nie udało się wysłać emaila", 500
+                print("❌ Ошибка: Не удалось отправить письмо")
+                return jsonify({'success': False, 'error': 'Nie udało się wysłać emaila'}), 500
         else:
-            # Резервный вариант: скачивание файла
+            print("⚠️ Email service недоступен, скачивание файла")
             if cv_path.exists():
                 return send_file(
                     cv_path,
@@ -109,15 +121,14 @@ def premium():
                     mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 )
             else:
-                return "Błąd: Nie udało się znaleźć CV", 500
+                return jsonify({'success': False, 'error': 'Nie udało się znaleźć CV'}), 500
                 
     except Exception as e:
         print(f"❌ Ошибка премиум-запроса: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
-        return f"Błąd serwera: {str(e)[:100]}", 500
+        return jsonify({'success': False, 'error': f"Błąd serwera: {str(e)[:100]}"}), 500
 
-# --- HEALTH CHECK ---
 @app.route('/health')
 def health():
     return "OK", 200
