@@ -1,17 +1,16 @@
-from flask import Flask, render_template, request, send_file, redirect, url_for
+from flask import Flask, render_template, request, send_file
 import os
 import subprocess
-import shutil
 from datetime import datetime
 from pathlib import Path
 
-# Импорты для генерации шаблонов и отправки писем
+# Импорты для отправки писем
 try:
-    from email_service_sendgrid import send_email_with_attachments
+    from email_service_sendgrid import send_premium_cv_sendgrid
     EMAIL_SERVICE_AVAILABLE = True
 except ImportError:
     EMAIL_SERVICE_AVAILABLE = False
-    print("⚠️ Email service not available (install sendgrid)")
+    print("⚠️ Email service not available")
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
@@ -60,7 +59,7 @@ def convert():
                 os.remove(output_path)
     return "Nieprawidłowy plik", 400
 
-# --- ПРЕМИУМ: ГЕНЕРАЦИЯ ШАБЛОНОВ И ОТПРАВКА НА EMAIL ---
+# --- ПРЕМИУМ: ОТПРАВКА ГОТОВЫХ ШАБЛОНОВ НА EMAIL ---
 @app.route('/premium', methods=['POST'])
 def premium():
     try:
@@ -74,67 +73,24 @@ def premium():
         if not email or '@' not in email:
             return "Błąd: Nieprawidłowy email", 400
         
-        # Генерируем шаблоны из папки templates_cv/
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        temp_output = Path(f'/tmp/premium_{timestamp}')
-        temp_output.mkdir(parents=True, exist_ok=True)
+        # Пути к готовым шаблонам
+        cv_path = Path(app.config['TEMPLATES_FOLDER']) / 'CV_Kowalski_Jan_Klasyczny.docx'
+        letter_path = Path(app.config['TEMPLATES_FOLDER']) / 'List_Motywacyjny_Kowalski_Jan.docx'
         
-        # Копируем шаблоны и заменяем плейсхолдеры
-        cv_template_path = Path(app.config['TEMPLATES_FOLDER']) / 'cv_template.docx'
-        cover_template_path = Path(app.config['TEMPLATES_FOLDER']) / 'cover_letter_template.docx'
-        
-        if not cv_template_path.exists():
+        # Проверяем существование файлов
+        if not cv_path.exists():
             return "Błąd: Szablon CV nie istnieje", 500
         
-        # Копируем и редактируем шаблон CV
-        cv_output = temp_output / f'CV_{name.replace(" ", "_")}.docx'
-        shutil.copy(cv_template_path, cv_output)
-        
-        # Здесь можно добавить замену плейсхолдеров в файле (через python-docx)
-        # Для простоты оставляем как есть
-        
-        # Конвертируем в PDF
-        cv_pdf = temp_output / f'CV_{name.replace(" ", "_")}.pdf'
-        subprocess.run([
-            'soffice', '--headless',
-            '--convert-to', 'pdf',
-            '--outdir', str(temp_output),
-            str(cv_output)
-        ], check=True, timeout=30)
-        
-        # Подготавливаем файлы для отправки
-        attachments = []
-        if cv_pdf.exists():
-            attachments.append(('CV.pdf', cv_pdf.read_bytes(), 'application/pdf'))
-        
-        # Отправляем письмо через SendGrid
+        # Отправляем письмо через существующую функцию
         if EMAIL_SERVICE_AVAILABLE:
-            subject = "💎 Twoje Premium CV + List motywacyjny"
-            body = f"""
-            Cześć {name}! 👋
-            
-            Dziękujemy za zakup Premium! 🎉
-            
-            W załączniku znajdziesz:
-            ✅ Profesjonalne CV w formacie PDF
-            ✅ List motywacyjny (jeśli dostępny)
-            
-            W razie pytań pisz na cvkonwerterpoland@gmail.com
-            
-            Pozdrawiamy,
-            Zespół CV Konwerter
-            """
-            
-            success = send_email_with_attachments(
-                to_email=email,
-                subject=subject,
-                html_content=body,
-                attachments=attachments
+            success = send_premium_cv_sendgrid(
+                recipient_email=email,
+                cv_path=str(cv_path),
+                letter_path=str(letter_path) if letter_path.exists() else None,
+                user_name=name
             )
             
             if success:
-                # Удаляем временные файлы
-                shutil.rmtree(temp_output, ignore_errors=True)
                 return """
                 <script>
                     alert('✅ Dziękujemy! Twoje Premium CV zostało wysłane na email. Sprawdź skrzynkę (również SPAM).');
@@ -144,21 +100,21 @@ def premium():
             else:
                 return "Błąd: Nie udało się wysłać emaila", 500
         else:
-            # Резервный вариант: скачивание файлов
-            if cv_pdf.exists():
-                response = send_file(
-                    cv_pdf,
+            # Резервный вариант: скачивание файла
+            if cv_path.exists():
+                return send_file(
+                    cv_path,
                     as_attachment=True,
-                    download_name=f'CV_{name.replace(" ", "_")}.pdf',
-                    mimetype='application/pdf'
+                    download_name=f'CV_{name.replace(" ", "_")}.docx',
+                    mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 )
-                shutil.rmtree(temp_output, ignore_errors=True)
-                return response
             else:
-                return "Błąd: Nie udało się wygenerować CV", 500
+                return "Błąd: Nie udało się znaleźć CV", 500
                 
     except Exception as e:
         print(f"❌ Ошибка премиум-запроса: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         return f"Błąd serwera: {str(e)[:100]}", 500
 
 # --- HEALTH CHECK ---
