@@ -10,6 +10,7 @@ const result = document.getElementById('result');
 const error = document.getElementById('error');
 const downloadLink = document.getElementById('downloadLink');
 const errorMessage = document.getElementById('errorMessage');
+const rodoConsent = document.getElementById('rodo_consent');
 
 // Prevent default drag behaviors
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -80,6 +81,12 @@ function handleFiles(files) {
 uploadForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    // ✅ ПРОВЕРКА СОГЛАСИЯ RODO
+    if (rodoConsent && !rodoConsent.checked) {
+        showError('Proszę zaakceptować politykę prywatności RODO');
+        return;
+    }
+    
     const file = fileInput.files[0];
     if (!file) {
         showError('Proszę wybrać plik');
@@ -124,12 +131,15 @@ uploadForm.addEventListener('submit', async function(e) {
             const url = window.URL.createObjectURL(blob);
             const pdfFilename = file.name.replace(/\.(doc|docx)$/i, '.pdf');
             
+            // ✅ УСТАНАВЛИВАЕМ ССЫЛКУ НА КНОПКУ (НЕ АВТОЗАГРУЗКУ!)
             downloadLink.href = url;
             downloadLink.download = pdfFilename;
             
-            // ✅ ПОКАЗЫВАЕМ ТОЛЬКО КНОПКУ (НЕ АВТОЗАГРУЗКУ!)
+            // ✅ ПОКАЗЫВАЕМ КНОПКУ "POBIERZ PDF"
             result.classList.remove('hidden');
             progressBar.classList.add('hidden');
+            
+            // ❌ УДАЛЕНА АВТОМАТИЧЕСКАЯ ЗАГРУЗКА
             
         } else {
             const errorData = await response.json();
@@ -152,16 +162,19 @@ function showError(message) {
     convertBtn.innerHTML = `<i class="fas fa-magic mr-2"></i> Konwertuj do PDF`;
 }
 
-// Smooth scroll for navigation links
+// ✅ ИСПРАВЛЕННЫЙ ОБРАБОТЧИК НАВИГАЦИИ (без ошибки в строке 192)
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
+        const targetId = this.getAttribute('href');
+        if (targetId && targetId !== '#') {
+            const target = document.querySelector(targetId);
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
         }
     });
 });
