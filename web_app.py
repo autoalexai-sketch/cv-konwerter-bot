@@ -22,7 +22,6 @@ os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 def index():
     return render_template('index.html')
 
-# --- КОНВЕРТАЦИЯ ФАЙЛОВ (ВОЗВРАЩАЕМ ИМЯ ФАЙЛА) ---
 @app.route('/convert', methods=['POST'])
 def convert():
     file = request.files.get('file')
@@ -42,7 +41,6 @@ def convert():
             output_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{timestamp}_{os.path.splitext(file.filename)[0]}.pdf')
             output_filename = f"cv_{timestamp}.pdf"
             
-            # ✅ Возвращаем информацию о файле (не сам файл!)
             return jsonify({
                 'success': True,
                 'filename': output_filename,
@@ -55,7 +53,6 @@ def convert():
                 os.remove(input_path)
     return jsonify({'success': False, 'error': 'Nieprawidłowy plik'}), 400
 
-# --- ЭНДПОИНТ ДЛЯ СКАЧИВАНИЯ ФАЙЛА ---
 @app.route('/download/<filename>')
 def download_file(filename):
     file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
@@ -68,7 +65,6 @@ def download_file(filename):
         )
     return "Plik nie istnieje", 404
 
-# --- ПРЕМИУМ: ОТПРАВКА ШАБЛОНОВ НА EMAIL (С ОТЛАДКОЙ) ---
 @app.route('/premium', methods=['POST'])
 def premium():
     try:
@@ -77,24 +73,18 @@ def premium():
         phone = request.form.get('phone', '')
         city = request.form.get('city', 'Kraków')
         
-        print(f"📧 Получен премиум-запрос: {name}, {email}, {city}")
+        print(f"📧 Premium request: {name}, {email}, {city}")
         
         if not email or '@' not in email:
-            print("❌ Ошибка: Неправильный email")
             return jsonify({'success': False, 'error': 'Nieprawidłowy email'}), 400
         
         cv_path = Path(app.config['TEMPLATES_FOLDER']) / 'CV_Kowalski_Jan_Klasyczny.docx'
         letter_path = Path(app.config['TEMPLATES_FOLDER']) / 'List_Motywacyjny_Kowalski_Jan.docx'
         
-        print(f"📄 Путь к шаблону резюме: {cv_path}")
-        print(f"📄 Путь к шаблону письма: {letter_path}")
-        
         if not cv_path.exists():
-            print("❌ Ошибка: Шаблон резюме не найден")
             return jsonify({'success': False, 'error': 'Szablon CV nie istnieje'}), 500
         
         if EMAIL_SERVICE_AVAILABLE:
-            print(f"📤 Отправка письма через SendGrid на {email}")
             success = send_premium_cv_sendgrid(
                 recipient_email=email,
                 cv_path=str(cv_path),
@@ -103,16 +93,13 @@ def premium():
             )
             
             if success:
-                print("✅ Письмо успешно отправлено!")
                 return jsonify({
                     'success': True,
                     'message': '✅ Dziękujemy! Twoje Premium CV zostało wysłane na email. Sprawdź skrzynkę (również SPAM).'
                 })
             else:
-                print("❌ Ошибка: Не удалось отправить письмо")
                 return jsonify({'success': False, 'error': 'Nie udało się wysłać emaila'}), 500
         else:
-            print("⚠️ Email service недоступен, скачивание файла")
             if cv_path.exists():
                 return send_file(
                     cv_path,
@@ -124,7 +111,7 @@ def premium():
                 return jsonify({'success': False, 'error': 'Nie udało się znaleźć CV'}), 500
                 
     except Exception as e:
-        print(f"❌ Ошибка премиум-запроса: {type(e).__name__}: {e}")
+        print(f"❌ Premium error: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': f"Błąd serwera: {str(e)[:100]}"}), 500
@@ -135,8 +122,4 @@ def health():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
-<<<<<<< Updated upstream
     app.run(host='0.0.0.0', port=port)
-=======
-    app.run(host='0.0.0.0', port=port)
->>>>>>> Stashed changes
