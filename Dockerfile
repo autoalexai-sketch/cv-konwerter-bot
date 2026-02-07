@@ -26,4 +26,4 @@ ENV HOME=/tmp
 EXPOSE 10000
 
 # Команда запуска
-CMD ["python", "app.py"]
+CMD ["python", "web_app.py"]
