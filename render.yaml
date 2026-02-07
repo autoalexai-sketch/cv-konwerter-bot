@@ -1,15 +1,15 @@
 services:
   - type: web
-    name: cv-konwerter-web
+    name: cv-konwerter-web-docker
     env: python
     region: frankfurt
     plan: free
-    branch: main
-    buildCommand: "pip install -r requirements.txt && apt-get update && apt-get install -y libreoffice-writer libreoffice-core fonts-liberation fonts-dejavu"
-    startCommand: "python web_app.py"
+    buildCommand: "pip install -r requirements.txt && apt-get update && apt-get install -y libreoffice-writer fonts-liberation"
+    startCommand: "python web_app.py"  # ← КРИТИЧЕСКИ ВАЖНО: именно web_app.py!
     envVars:
-      - key: PORT
-        value: 10000
       - key: PYTHON_VERSION
-        value: 3.12.0
-    healthCheckPath: /health
+        value: 3.12
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
+        value: cvkonwerterpoland@gmail.com
