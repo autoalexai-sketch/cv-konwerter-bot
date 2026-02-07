@@ -11,7 +11,7 @@ except ImportError:
     EMAIL_SERVICE_AVAILABLE = False
     print("⚠️ Email service not available")
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='web/templates')
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
 app.config['OUTPUT_FOLDER'] = '/tmp/outputs'
 app.config['TEMPLATES_FOLDER'] = 'templates_cv'
