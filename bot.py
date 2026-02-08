@@ -2,15 +2,19 @@ import asyncio
 import os
 import logging
 from aiohttp import ClientSession, FormData
-from aiogram import Bot, Dispatcher, types, F
+from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
-from pathlib import Path
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+if not TOKEN:
+    logger.error("❌ TELEGRAM_BOT_TOKEN не найден!")
+    exit(1)
+
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -27,37 +31,61 @@ async def handle_doc(message):
     
     await message.reply("⏳ Konwertuję...")
     
-    # Скачать файл
-    file_info = await bot.get_file(doc.file_id)
-    async with ClientSession() as session:
-        file_content = await session.get(
-            f"https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}"
+    try:
+        # 1. Скачать .docx с TELEGRAM
+        file_info = await bot.get_file(doc.file_id)
+        async with ClientSession() as session:
+            async with session.get(
+                f"https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}"
+            ) as file_resp:
+                if file_resp.status != 200:
+                    await message.reply("❌ Błąd pobierania pliku!")
+                    return
+                doc_bytes = await file_resp.read()
+        
+        # 2. Сохранить во временный файл (БИНАРНЫЙ РЕЖИМ!)
+        temp_docx = f"/tmp/{doc.file_id}.docx"
+        with open(temp_docx, "wb") as f:
+            f.write(doc_bytes)
+        
+        # 3. Отправить на Render.com с ПРАВИЛЬНЫМИ HEADERS
+        form = FormData()
+        with open(temp_docx, "rb") as f:
+            form.add_field(
+                'file',
+                f,
+                filename=doc.file_name,
+                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+        
+        async with ClientSession() as session:
+            async with session.post(
+                "https://cv-konwerter-web-docker.onrender.com/convert",
+                data=form
+            ) as pdf_resp:
+                if pdf_resp.status != 200:
+                    await message.reply(f"❌ Błąd konwersji: HTTP {pdf_resp.status}")
+                    logger.error(f"Render.com error: {pdf_resp.status}")
+                    return
+                
+                pdf_bytes = await pdf_resp.read()
+        
+        # 4. Отправить РАБОЧИЙ PDF
+        await message.reply_document(
+            BufferedInputFile(pdf_bytes, filename="cv.pdf"),
+            caption="✅ Gotowe! 📄"
         )
-        doc_bytes = await file_content.read()
+        
+        logger.info(f"✅ Konwersja OK: {doc.file_name} → cv.pdf")
     
-    # Сохранить временно
-    temp_file = Path(f"/tmp/{doc.file_id}.docx")
-    temp_file.write_bytes(doc_bytes)
+    except Exception as e:
+        logger.error(f"❌ Błąd: {e}")
+        await message.reply("❌ Wystąpił błąd konwersji!")
     
-    # Конвертировать
-    form_data = FormData()
-    form_data.add_field('file', temp_file.read_bytes(), filename=doc.file_name)
-    
-    async with ClientSession() as session:
-        pdf_response = await session.post(
-            "https://cv-konwerter-web-docker.onrender.com/convert",
-            data=form_data
-        )
-        pdf_bytes = await pdf_response.read()
-    
-    # Отправить PDF
-    await message.reply_document(
-        BufferedInputFile(pdf_bytes, filename="cv.pdf"),
-        caption="✅ Gotowe! 📄"
-    )
-    
-    # Удалить временный файл
-    temp_file.unlink(missing_ok=True)
+    finally:
+        # 5. Удалить временный файл
+        if os.path.exists(temp_docx):
+            os.unlink(temp_docx)
 
 async def main():
     logger.info("🚀 Bot started!")
@@ -65,4 +93,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
