@@ -84,7 +84,7 @@ async def handle_docs(message: types.Message):
     input_path = None
     
     try:
-        # 1. СКАЧИВАЕМ ФАЙЛ
+        # 1. СКАЧИВАЕМ ФАЙЛ С TELEGRAM
         file = await bot.get_file(doc.file_id)
         file_path = file.file_path
         
@@ -98,7 +98,7 @@ async def handle_docs(message: types.Message):
         
         logger.info(f"📥 Скачан файл: {input_path} ({len(content)} байт)")
         
-        # 2. КОНВЕРТИРУЕМ
+        # 2. ОТПРАВЛЯЕМ НА PDF СЕРВИС
         async with ClientSession(timeout=ClientTimeout(total=60)) as session:
             data = FormData()
             with open(input_path, 'rb') as f:
@@ -111,7 +111,7 @@ async def handle_docs(message: types.Message):
                     raise Exception(f"PDF service error: {resp.status}")
                 pdf_content = await resp.read()
         
-        # 3. ОТПРАВЛЯЕМ PDF
+        # 3. ОТПРАВЛЯЕМ PDF Боту
         await processing_msg.delete()
         await message.answer_document(
             BufferedInputFile(pdf_content, filename=f"cv_{int(time.time())}.pdf"),
@@ -124,6 +124,7 @@ async def handle_docs(message: types.Message):
     finally:
         if input_path and input_path.exists():
             input_path.unlink()
+            logger.info(f"🗑️ Удалён временный файл: {input_path}")
 
 async def main():
     logger.info("🚀 Bot starting - 100% POLLING MODE!")
