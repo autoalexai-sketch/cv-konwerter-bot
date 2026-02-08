@@ -79,7 +79,10 @@ async def handle_doc(message):
         logger.info(f"✅ Konwersja OK: {doc.file_name} → cv.pdf")
     
     except Exception as e:
-        logger.error(f"❌ Błąd: {e}")
+        logger.error(f"❌ DEBUG ERROR: {e}")
+        logger.error(f"📊 PDF Response status: {pdf_resp.status}")
+        logger.error(f"📊 PDF Response headers: {pdf_resp.headers}")
+        logger.error(f"📊 Doc size: {len(doc_bytes)} bytes")
         await message.reply("❌ Wystąpił błąd konwersji!")
     
     finally:
