@@ -72,7 +72,8 @@ class CVGenerator:
         
         full_address = ', '.join(address_parts) if address_parts else data.get('miasto', '')
         
-        contact_text = f"📧 {data['email']}  |  📱 {data['telefon']}  |  📍 {full_address}"
+        # ИСПРАВЛЕНО: заменили эмодзи на текстовые метки
+        contact_text = f"Email: {data['email']}  |  Tel: {data['telefon']}  |  Adres: {full_address}"
         contact_run = contact.add_run(contact_text)
         self._set_font(contact_run, font_size=Pt(11))
         contact.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -82,9 +83,7 @@ class CVGenerator:
     def _add_section(self, doc: Document, title: str, icon: str = ""):
         """Добавить секцию с иконкой"""
         section = doc.add_paragraph()
-        if icon:
-            icon_run = section.add_run(f"{icon} ")
-            self._set_font(icon_run)
+        # ИСПРАВЛЕНО: убрали иконку, так как эмодзи не поддерживаются
         section_title = section.add_run(title.upper())
         self._set_font(section_title, font_size=Pt(14), bold=True, color=RGBColor(31, 78, 121))
         
@@ -116,7 +115,7 @@ class CVGenerator:
         
         # O sobie
         if 'o_sobie' in data and data['o_sobie']:
-            self._add_section(doc, 'O mnie', '👤')
+            self._add_section(doc, 'O mnie')
             p_about = doc.add_paragraph()
             about_run = p_about.add_run(data['o_sobie'])
             self._set_font(about_run)
@@ -124,7 +123,7 @@ class CVGenerator:
         
         # Doświadczenie zawodowe
         if 'doswiadczenie' in data and data['doswiadczenie']:
-            self._add_section(doc, 'Doświadczenie zawodowe', '💼')
+            self._add_section(doc, 'Doświadczenie zawodowe')
             for exp in data['doswiadczenie']:
                 p = doc.add_paragraph()
                 # Stanowisko i firma
@@ -141,7 +140,7 @@ class CVGenerator:
         
         # Wykształcenie
         if 'wyksztalcenie' in data and data['wyksztalcenie']:
-            self._add_section(doc, 'Wykształcenie', '🎓')
+            self._add_section(doc, 'Wykształcenie')
             for edu in data['wyksztalcenie']:
                 p = doc.add_paragraph()
                 # Kierunek i stopień
@@ -157,7 +156,7 @@ class CVGenerator:
         
         # Umiejętności
         if 'umiejetnosci' in data and data['umiejetnosci']:
-            self._add_section(doc, 'Umiejętności', '⚙️')
+            self._add_section(doc, 'Umiejętności')
             skills_text = ' • '.join(data['umiejetnosci'])
             p_skills = doc.add_paragraph()
             skills_run = p_skills.add_run(skills_text)
@@ -166,7 +165,7 @@ class CVGenerator:
         
         # Języki
         if 'jezyki' in data and data['jezyki']:
-            self._add_section(doc, 'Języki', '🌍')
+            self._add_section(doc, 'Języki')
             for lang in data['jezyki']:
                 lang_text = f"{lang['jezyk']}: {lang['poziom']}"
                 p_lang = doc.add_paragraph(lang_text, style='List Bullet')
@@ -176,7 +175,7 @@ class CVGenerator:
         
         # Zainteresowania
         if 'zainteresowania' in data and data['zainteresowania']:
-            self._add_section(doc, 'Zainteresowania', '🎯')
+            self._add_section(doc, 'Zainteresowania')
             interests_text = ' • '.join(data['zainteresowania'])
             p_interests = doc.add_paragraph()
             interests_run = p_interests.add_run(interests_text)
@@ -248,7 +247,8 @@ class CVGenerator:
             address_parts.append(data['miasto'])
         full_address = ', '.join(address_parts) if address_parts else data.get('miasto', '')
         
-        contact_text = f"📧 {data['email']}  •  📱 {data['telefon']}  •  📍 {full_address}"
+        # ИСПРАВЛЕНО: заменили эмодзи на текстовые метки
+        contact_text = f"Email: {data['email']}  •  Tel: {data['telefon']}  •  Adres: {full_address}"
         contact_run = contact.add_run(contact_text)
         self._set_font(contact_run, font_size=Pt(10), color=RGBColor(80, 80, 80))
         
@@ -265,7 +265,8 @@ class CVGenerator:
         # Doświadczenie zawodowe
         if 'doswiadczenie' in data and data['doswiadczenie']:
             exp_header = doc.add_paragraph()
-            exp_title = exp_header.add_run('💼 DOŚWIADCZENIE ZAWODOWE')
+            # ИСПРАВЛЕНО: убрали эмодзи
+            exp_title = exp_header.add_run('DOŚWIADCZENIE ZAWODOWE')
             self._set_font(exp_title, font_size=Pt(14), bold=True, color=RGBColor(31, 78, 121))
             
             for exp in data['doswiadczenie']:
@@ -288,7 +289,8 @@ class CVGenerator:
         # Wykształcenie
         if 'wyksztalcenie' in data and data['wyksztalcenie']:
             edu_header = doc.add_paragraph()
-            edu_title = edu_header.add_run('🎓 WYKSZTAŁCENIE')
+            # ИСПРАВЛЕНО: убрали эмодзи
+            edu_title = edu_header.add_run('WYKSZTAŁCENIE')
             edu_title.font.size = Pt(14)
             edu_title.font.bold = True
             edu_title.font.color.rgb = RGBColor(31, 78, 121)
@@ -306,10 +308,11 @@ class CVGenerator:
                 
                 doc.add_paragraph()
         
-        # Umiejętności (w kolumnach, z цветными тегами)
+        # Umiejętności (w kolumnach, с цветными тегами)
         if 'umiejetnosci' in data and data['umiejetnosci']:
             skills_header = doc.add_paragraph()
-            skills_title = skills_header.add_run('⚙️ UMIEJĘTNOŚCI')
+            # ИСПРАВЛЕНО: убрали эмодзи
+            skills_title = skills_header.add_run('UMIEJĘTNOŚCI')
             self._set_font(skills_title, font_size=Pt(14), bold=True, color=RGBColor(31, 78, 121))
             
             # Создаем таблицу для красивого отображения
@@ -332,7 +335,8 @@ class CVGenerator:
         # Języki
         if 'jezyki' in data and data['jezyki']:
             lang_header = doc.add_paragraph()
-            lang_title = lang_header.add_run('🌍 JĘZYKI')
+            # ИСПРАВЛЕНО: убрали эмодзи
+            lang_title = lang_header.add_run('JĘZYKI')
             self._set_font(lang_title, font_size=Pt(14), bold=True, color=RGBColor(31, 78, 121))
             
             for lang in data['jezyki']:
