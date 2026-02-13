@@ -1,13 +1,16 @@
-FROM python:3.11-slim
-
-# LibreOffice для конвертации
-RUN apt-get update && apt-get install -y \
-    libreoffice \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
 
-COPY . .
-CMD ["python", "bot.py"]
+# Установка LibreOffice и зависимостей
+RUN apt-get update && \
+    apt-get install -y \
+    libreoffice-writer \
+    libreoffice-core \
+    fonts-liberation \
+    fonts-dejavu \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копирование requirements.txt и установка Python зависимостей
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
