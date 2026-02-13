@@ -10,6 +10,11 @@ from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from dotenv import load_dotenv
+from rate_limiter import RateLimitMiddleware
+
+# Загрузить переменные окружения
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,6 +26,8 @@ if not TOKEN:
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+# Rate limiting: 5 запросов в час
+dp.message.middleware(RateLimitMiddleware(rate_limit=5, time_window=3600))
 
 # Счетчики пользователей (fake)
 user_stats = defaultdict(lambda: {"conversions": 0, "premium": False})
@@ -244,7 +251,49 @@ async def stats(callback: types.CallbackQuery):
 async def handle_doc(message: types.Message):
     user_id = message.from_user.id
     doc = message.document
+    # ============ НОВЫЕ ПРОВЕРКИ БЕЗОПАСНОСТИ ============
     
+    # 1. Проверка размера файла (15 MB лимит)
+    MAX_SIZE = int(os.getenv('MAX_FILE_SIZE_MB', '15')) * 1024 * 1024
+    if doc.file_size and doc.file_size > MAX_SIZE:
+        await message.reply(
+            "❌ <b>Plik za duży!</b>\n"
+            f"📊 Maksymalnie: {MAX_SIZE // 1024 // 1024} MB\n"
+            f"📁 Twój plik: {doc.file_size // 1024 // 1024} MB\n\n"
+            "💡 Spróbuj skompresować plik lub usuń obrazy.",
+            parse_mode="HTML",
+            reply_markup=main_keyboard(lang)
+        )
+        logger.warning(f"File too large: {doc.file_size} bytes from user {user_id}")
+        return
+    
+    # 2. Проверка расширения файла
+    if not doc.file_name or not doc.file_name.lower().endswith(('.docx', '.doc')):
+        await message.reply(
+            "❌ <b>Nieprawidłowy format!</b>\n\n"
+            "📎 Akceptujemy tylko:\n"
+            "• .docx (Word 2007+)\n"
+            "• .doc (Word 97-2003)\n\n"
+            "💡 Zapisz plik jako Word Document.",
+            parse_mode="HTML",
+            reply_markup=main_keyboard(lang)
+        )
+        logger.warning(f"Invalid file format: {doc.file_name} from user {user_id}")
+        return
+    
+    # 3. Проверка на пустой файл
+    if doc.file_size == 0:
+        await message.reply(
+            "❌ <b>Plik jest pusty!</b>\n\n"
+            "📄 Wyślij plik z treścią.",
+            parse_mode="HTML",
+            reply_markup=main_keyboard(lang)
+        )
+        logger.warning(f"Empty file from user {user_id}")
+        return
+    
+    # ============ КОНЕЦ НОВЫХ ПРОВЕРОК ============    
+
     # Обновляем статистику
     user_stats[user_id]["conversions"] += 1
     
