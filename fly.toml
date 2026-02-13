@@ -1,25 +1,32 @@
-# fly.toml app configuration file generated for cv-poland-project on 2026-01-25T18:28:09Z
-
+# fly.toml app configuration file generated for cv-konwerter-bot
 app = 'cv-konwerter-bot'
 primary_region = 'ams'
 
 [build]
-  dockerfile = "Dockerfile.bot"
+  dockerfile = "Dockerfile"
 
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = false
-  auto_start_machines = true
-  min_machines_running = 1
-  processes = ['app']
+[env]
+  MAX_FILE_SIZE_MB = "15"
+  RATE_LIMIT_PER_HOUR = "5"
+  ENVIRONMENT = "production"
 
-[[http_service.checks]]
-  grace_period = "60s"   # Дадим боту минуту на запуск
-  interval = "30s"
-  method = "GET"
-  timeout = "5s"
-  path = "/"
+# НЕ НУЖЕН HTTP SERVICE ДЛЯ POLLING БОТА!
+# Комментируем всю секцию http_service
+#[http_service]
+#  internal_port = 8080
+#  force_https = true
+#  auto_stop_machines = false
+#  auto_start_machines = true
+#  min_machines_running = 1
+#  processes = ['app']
+
+# ТАКЖЕ КОММЕНТИРУЕМ health checks (они для HTTP)
+#[[http_service.checks]]
+#  grace_period = "60s"
+#  interval = "30s"
+#  method = "GET"
+#  timeout = "5s"
+#  path = "/"
 
 [vm]
   memory = '1gb'
