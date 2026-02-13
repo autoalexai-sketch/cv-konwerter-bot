@@ -1,14 +1,13 @@
 import asyncio
 import os
 import logging
-import json
 import subprocess
 import tempfile
 from collections import defaultdict
-from aiohttp import ClientSession, FormData
+from aiohttp import ClientSession
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
-from aiogram.types import BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import BufferedInputFile, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from dotenv import load_dotenv
 from rate_limiter import RateLimitMiddleware
@@ -20,19 +19,22 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+logger.info(f"DEBUG: TOKEN loaded = {TOKEN[:10]}..." if TOKEN else "DEBUG: TOKEN is None!")
+
 if not TOKEN:
     logger.error("❌ TELEGRAM_BOT_TOKEN не найден!")
     exit(1)
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
 # Rate limiting: 5 запросов в час
 dp.message.middleware(RateLimitMiddleware(rate_limit=5, time_window=3600))
 
-# Счетчики пользователей (fake)
+# Счетчики пользователей (in-memory)
 user_stats = defaultdict(lambda: {"conversions": 0, "premium": False})
 
-# ✅ ПРАВИЛЬНОЕ автоопределение языка по Telegram language_code
+
 def detect_language(user: types.User):
     """Определяем язык пользователя по language_code"""
     if not user.language_code:
@@ -45,9 +47,9 @@ def detect_language(user: types.User):
         return 'en'
     elif lang.startswith('pl'):
         return 'pl'
-    return 'pl'  # По умолчанию польский
+    return 'pl'
 
-# ✅ Тексты с новой почтой + сайтом + возвратом денег
+
 TEXTS = {
     'pl': {
         'welcome': """✨ <b>CV Konwerter Premium</b> ✨
@@ -66,8 +68,8 @@ TEXTS = {
 🌐 <b>Serwis:</b> <a href='https://cv-konwerter-web-docker.onrender.com/'>cv-konwerter-web-docker.onrender.com</a>
 
 📎 Wyślij .docx:""",
-        'success': "✅ <b>PREMIUM PDF GOTOWE!</b>\\n✨ HR friendly design!\\n💎 Kolejna: 9,99zł mc",
-        'trial_used': "🎁 Gratis zużyty!\\n💎 Premium 9,99zł → Nielimitowane!"
+        'success': "✅ <b>PREMIUM PDF GOTOWE!</b>\n✨ HR friendly design!\n💎 Kolejna: 9,99zł mc",
+        'trial_used': "🎁 Gratis zużyty!\n💎 Premium 9,99zł → Nielimitowane!"
     },
     'uk': {
         'welcome': """✨ <b>CV Конвертер Premium</b> ✨
@@ -86,8 +88,8 @@ TEXTS = {
 🌐 <b>Сервіс:</b> <a href='https://cv-konwerter-web-docker.onrender.com/'>cv-konwerter-web-docker.onrender.com</a>
 
 📎 Відправ .docx:""",
-        'success': "✅ <b>ПРЕМІУМ PDF ГОТОВО!</b>\\n✨ Ідеально для HR!\\n💎 Наступна: 9,99zł/міс",
-        'trial_used': "🎁 Безкоштовна використана!\\n💎 Premium 9,99zł → Необмежено!"
+        'success': "✅ <b>ПРЕМІУМ PDF ГОТОВО!</b>\n✨ Ідеально для HR!\n💎 Наступна: 9,99zł/міс",
+        'trial_used': "🎁 Безкоштовна використана!\n💎 Premium 9,99zł → Необмежено!"
     },
     'en': {
         'welcome': """✨ <b>CV Converter Premium</b> ✨
@@ -106,10 +108,11 @@ TEXTS = {
 🌐 <b>Service:</b> <a href='https://cv-konwerter-web-docker.onrender.com/'>cv-konwerter-web-docker.onrender.com</a>
 
 📎 Send .docx:""",
-        'success': "✅ <b>PREMIUM PDF READY!</b>\\n✨ HR friendly design!\\n💎 Next: 9,99zł/month",
-        'trial_used': "🎁 Free trial used!\\n💎 Premium 9,99zł → Unlimited!"
+        'success': "✅ <b>PREMIUM PDF READY!</b>\n✨ HR friendly design!\n💎 Next: 9,99zł/month",
+        'trial_used': "🎁 Free trial used!\n💎 Premium 9,99zł → Unlimited!"
     }
 }
+
 
 def main_keyboard(lang='pl'):
     builder = InlineKeyboardBuilder()
@@ -121,6 +124,7 @@ def main_keyboard(lang='pl'):
     builder.adjust(1)
     return builder.as_markup()
 
+
 @dp.message(Command("start"))
 async def start(message: types.Message):
     lang = detect_language(message.from_user)
@@ -130,6 +134,7 @@ async def start(message: types.Message):
         parse_mode="HTML",
         reply_markup=main_keyboard(lang)
     )
+
 
 @dp.callback_query(F.data == "privacy")
 async def privacy_policy(callback: types.CallbackQuery):
@@ -160,7 +165,7 @@ async def privacy_policy(callback: types.CallbackQuery):
 <b>5. Prawa użytkownika:</b>
 • Usuń dane: @autoalex_ai
 • Dostęp do danych: Support 24h
-• Zażalenia: [cvkonwerterpoland@gmail.com](mailto:cvkonwerterpoland@gmail.com)
+• Zażalenia: cvkonwerterpoland@gmail.com
 
 <i>CV Konwerter Team | 2026
 Ostatnia aktualizacja: 09.02.2026</i>""",
@@ -170,61 +175,62 @@ Ostatnia aktualizacja: 09.02.2026</i>""",
     )
     await callback.answer()
 
+
 @dp.callback_query(F.data == "support")
 async def support(callback: types.CallbackQuery):
     lang = detect_language(callback.from_user)
     await callback.message.edit_text(
         "📧 <b>SUPPORT 24h</b>\n\n"
         "💬 <b>Grupa wsparcia:</b>\n"
-        "<a href='https://t.me/+08zaEqwDXTI4YTI0'>Support CV Konwerter</a>\n\n"
+        "t.me/+08zaEqwDXTI4YTI0\n\n"
         "👨‍💼 <b>Główny support:</b> @autoalex_ai\n"
-        "📧 <b>Email:</b> <a href='mailto:cvkonwerterpoland@gmail.com'>cvkonwerterpoland@gmail.com</a>\n\n"
+        "📧 <b>Email:</b> cvkonwerterpoland@gmail.com\n\n"
         "⚡ <b>Odpowiedź w 30 minut!</b>\n"
-        "💎 Premium = priorytet (5 minut)\n\n"
-        "🤖 <i>@GroupHelpBot + @anti_spambot aktywne</i>",
+        "💎 Premium = priorytet (5 minut)",
         parse_mode="HTML",
         reply_markup=main_keyboard(lang),
         disable_web_page_preview=True
     )
     await callback.answer()
+
 
 @dp.callback_query(F.data == "premium")
 async def premium_info(callback: types.CallbackQuery):
     lang = detect_language(callback.from_user)
     await callback.message.edit_text(
-        "💎 <b>PREMIUM 9,99zł/mc - WSZYSTKO ВКЛЮЧЕНО</b>\\n\\n"
-        "🎯 <b>Co otrzymujesz:</b>\\n"
-        "• 100+ konwersji dziennie\\n"
-        "• ⚡ Turbo prędkość 5 sekund\\n"
-        "• 🎨 Profesjonalny design CV\\n"
-        "• 📱 Aplikacja mobilna\\n"
-        "• 🌙 Dostęp 24/7 bez limitów\\n"
-        "• 🔒 100% prywatność\\n"
-        "• 📧 Support w 5 minut\\n\\n"
-        "💰 <b>9,99zł = 33gr/konwersja</b>\\n"
-        "💰 <b>14 dni na zwrot</b> (polskie prawo)\\n"
-        "💳 <a href='https://przelewy24.pl/cvkonwerter'>Przelewy24 → AKTYWUJ</a>",
+        "💎 <b>PREMIUM 9,99zł/mc - WSZYSTKO WŁĄCZONE</b>\n\n"
+        "🎯 <b>Co otrzymujesz:</b>\n"
+        "• 100+ konwersji dziennie\n"
+        "• ⚡ Turbo prędkość 5 sekund\n"
+        "• 🎨 Profesjonalny design CV\n"
+        "• 📱 Aplikacja mobilna\n"
+        "• 🌙 Dostęp 24/7 bez limitów\n"
+        "• 🔒 100% prywatność\n"
+        "• 📧 Support w 5 minut\n\n"
+        "💰 <b>9,99zł = 33gr/konwersja</b>\n"
+        "💰 <b>14 dni na zwrot</b> (polskie prawo)",
         parse_mode="HTML",
         reply_markup=main_keyboard(lang),
         disable_web_page_preview=True
     )
     await callback.answer()
 
+
 @dp.callback_query(F.data == "przelew24")
 async def przelew24(callback: types.CallbackQuery):
     lang = detect_language(callback.from_user)
     await callback.message.edit_text(
-        "💳 <b>PRZELEWY24 - NATYCHMIAST!</b>\\n\\n"
-        "🔗 <a href='https://przelewy24.pl/cvkonwerter'>PŁAĆ 9,99zł → PREMIUM AKTYWNE</a>\\n\\n"
-        "⚡ Aktywacja w <b>5 sekund</b>\\n"
-        "✅ Natychmiastowy dostęp\\n"
-        "💰 14 dni zwrot pieniędzy\\n\\n"
+        "💳 <b>PRZELEWY24 - NATYCHMIAST!</b>\n\n"
+        "⚡ Aktywacja w <b>5 sekund</b>\n"
+        "✅ Natychmiastowy dostęp\n"
+        "💰 14 dni zwrot pieniędzy\n\n"
         "<i>Bezpieczne płatności Przelewy24</i>",
         parse_mode="HTML",
         reply_markup=main_keyboard(lang),
         disable_web_page_preview=True
     )
     await callback.answer()
+
 
 @dp.callback_query(F.data == "stats")
 async def stats(callback: types.CallbackQuery):
@@ -235,23 +241,25 @@ async def stats(callback: types.CallbackQuery):
     conversions = stats["conversions"]
     
     await callback.message.edit_text(
-        f"📊 <b>Twoje statystyki</b>\\n\\n"
-        f"✅ Konwersji: <b>{conversions}</b>\\n"
-        f"🎯 Status: <b>{status}</b>\\n\\n"
-        f"💎 Premium 9,99zł → Nielimitowane!\\n"
-        f"🔒 Dane chronione GDPR/RODO\\n"
-        f"📧 <a href='mailto:cvkonwerterpoland@gmail.com'>Support</a>",
+        f"📊 <b>Twoje statystyki</b>\n\n"
+        f"✅ Konwersji: <b>{conversions}</b>\n"
+        f"🎯 Status: <b>{status}</b>\n\n"
+        f"💎 Premium 9,99zł → Nielimitowane!\n"
+        f"🔒 Dane chronione GDPR/RODO\n"
+        f"📧 Support: cvkonwerterpoland@gmail.com",
         parse_mode="HTML",
         reply_markup=main_keyboard('pl')
     )
     await callback.answer()
 
-# ✅ LIBREOFFICE ЗАМЕНА Render.com
+
 @dp.message(F.document)
 async def handle_doc(message: types.Message):
     user_id = message.from_user.id
     doc = message.document
-    # ============ НОВЫЕ ПРОВЕРКИ БЕЗОПАСНОСТИ ============
+    lang = detect_language(message.from_user)
+    
+    # ============ ПРОВЕРКИ БЕЗОПАСНОСТИ ============
     
     # 1. Проверка размера файла (15 MB лимит)
     MAX_SIZE = int(os.getenv('MAX_FILE_SIZE_MB', '15')) * 1024 * 1024
@@ -267,7 +275,7 @@ async def handle_doc(message: types.Message):
         logger.warning(f"File too large: {doc.file_size} bytes from user {user_id}")
         return
     
-    # 2. Проверка расширения файла
+    # 2. Proверка расширения файла
     if not doc.file_name or not doc.file_name.lower().endswith(('.docx', '.doc')):
         await message.reply(
             "❌ <b>Nieprawidłowy format!</b>\n\n"
@@ -292,28 +300,19 @@ async def handle_doc(message: types.Message):
         logger.warning(f"Empty file from user {user_id}")
         return
     
-    # ============ КОНЕЦ НОВЫХ ПРОВЕРОК ============    
-
+    # ============ КОНЕЦ ПРОВЕРОК ============
+    
     # Обновляем статистику
     user_stats[user_id]["conversions"] += 1
     
-    if not doc.file_name or not doc.file_name.lower().endswith(('.docx', '.doc')):
-        lang = detect_language(message.from_user)
-        await message.reply(
-            "📄 Tylko .docx lub .doc pliki!\\n🔒 Dane chronione GDPR.",
-            parse_mode="HTML",
-            reply_markup=main_keyboard(lang)
-        )
-        return
-    
-    lang = detect_language(message.from_user)
     await message.reply(
-        "⏳ <b>Konwertuję 1 plik... ⚙️ LibreOffice</b>\\n⏱️ Czekaj 30-60s\\n🔒 Plik usuwany po konwersji",
+        "⏳ <b>Konwertuję 1 plik... ⚙️ LibreOffice</b>\n⏱️ Czekaj 30-60s\n🔒 Plik usuwany po konwersji",
         parse_mode="HTML"
     )
     
     temp_docx = None
     temp_pdf = None
+    
     try:
         # Скачиваем файл
         file_info = await bot.get_file(doc.file_id)
@@ -331,9 +330,9 @@ async def handle_doc(message: types.Message):
         with open(temp_docx, "wb") as f:
             f.write(doc_bytes)
         
-        logger.info(f"📊 Konwertuję: {temp_docx} → {temp_pdf}")
+        logger.info(f"📊 Converting: {temp_docx} → {temp_pdf}")
         
-        # ✅ LIBREOFFICE CLI (1 файл за раз!)
+        # LibreOffice конвертация
         result = subprocess.run([
             'libreoffice',
             '--headless',
@@ -342,19 +341,19 @@ async def handle_doc(message: types.Message):
             '--outdir', '/tmp'
         ], capture_output=True, text=True, timeout=90)
         
-        # Проверяем PDF создался
+        # Проверяем что PDF создался
         pdf_path = f"/tmp/{os.path.splitext(os.path.basename(temp_docx))[0]}.pdf"
         if result.returncode != 0 or not os.path.exists(pdf_path):
             logger.error(f"LibreOffice stderr: {result.stderr}")
-            raise Exception(f"LibreOffice failed. Spróbuj prostszy plik.")
+            raise Exception("LibreOffice conversion failed")
         
         # Читаем PDF
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
         
-        logger.info(f"✅ PDF gotowy! Size: {len(pdf_bytes)} bytes")
+        logger.info(f"✅ PDF ready! Size: {len(pdf_bytes)} bytes")
         
-        # Fake Premium
+        # Fake Premium (каждая 3-я конвертация)
         is_premium = user_stats[user_id]["conversions"] % 3 == 0
         user_stats[user_id]["premium"] = is_premium
         status_emoji = "💎" if is_premium else "🎁"
@@ -363,17 +362,15 @@ async def handle_doc(message: types.Message):
         await message.reply_document(
             BufferedInputFile(pdf_bytes, filename=filename),
             caption=(
-                f"{status_emoji} <b>{TEXTS[lang]['success']}</b>\\n\\n"
-                f"📊 Konwersji: <b>{user_stats[user_id]['conversions']}</b>\\n"
-                f"⚙️ LibreOffice Premium\\n"
-                f"🔒 <i>Dane usunięte (GDPR 60s)</i>\\n"
-                f"💎 <a href='https://przelewy24.pl/cvkonwerter'>Premium 9,99zł</a>"
+                f"{status_emoji} <b>{TEXTS[lang]['success']}</b>\n\n"
+                f"📊 Konwersji: <b>{user_stats[user_id]['conversions']}</b>\n"
+                f"⚙️ LibreOffice Premium\n"
+                f"🔒 <i>Dane usunięte (GDPR 60s)</i>"
             ),
             parse_mode="HTML",
-            reply_markup=main_keyboard(lang),
-            disable_web_page_preview=True
+            reply_markup=main_keyboard(lang)
         )
-        logger.info("✅ Konwersja OK!")
+        logger.info("✅ Conversion completed successfully!")
     
     except subprocess.TimeoutExpired:
         logger.error("❌ LibreOffice timeout 90s")
@@ -385,9 +382,9 @@ async def handle_doc(message: types.Message):
     except Exception as e:
         logger.error(f"❌ ERROR: {e}")
         await message.reply(
-            f"❌ Błąd konwersji: <code>{str(e)[:100]}</code>\\n\\n"
-            f"{TEXTS[lang]['trial_used']}\\n"
-            "📧 <a href='mailto:cvkonwerterpoland@gmail.com'>Support</a>",
+            f"❌ Błąd konwersji\n\n"
+            f"{TEXTS[lang]['trial_used']}\n"
+            "📧 Support: cvkonwerterpoland@gmail.com",
             parse_mode="HTML",
             reply_markup=main_keyboard(lang)
         )
@@ -398,14 +395,16 @@ async def handle_doc(message: types.Message):
             try:
                 if path and os.path.exists(path):
                     os.unlink(path)
-            except:
-                pass
+                    logger.info(f"🗑️ Deleted: {path}")
+            except Exception as e:
+                logger.error(f"Failed to delete {path}: {e}")
+
 
 async def main():
     logger.info("🚀 CV Konwerter Premium + LIBREOFFICE started!")
     await dp.start_polling(bot)
 
+
 if __name__ == "__main__":
     asyncio.run(main())
-
 
