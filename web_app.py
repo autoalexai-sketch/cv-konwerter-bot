@@ -20,10 +20,41 @@ os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
 @app.route('/')
 def index():
+    """Главная страница"""
     return render_template('index.html')
+
+
+# ============ ЮРИДИЧЕСКИЕ ДОКУМЕНТЫ ============
+
+@app.route('/polityka-prywatnosci')
+def privacy_policy():
+    """Политика конфиденциальности (RODO/GDPR)"""
+    return render_template('polityka-prywatnosci.html')
+
+
+@app.route('/regulamin')
+def terms_of_service():
+    """Условия использования / Регламент"""
+    return render_template('regulamin.html')
+
+
+@app.route('/polityka-cookies')
+def cookies_policy():
+    """Политика использования cookies"""
+    return render_template('polityka-cookies.html')
+
+
+@app.route('/zasady-subskrypcji')
+def subscription_terms():
+    """Правила подписки Premium"""
+    return render_template('zasady-subskrypcji.html')
+
+# ============ КОНЕЦ ЮРИДИЧЕСКИХ ДОКУМЕНТОВ ============
+
 
 @app.route('/convert', methods=['POST'])
 def convert():
+    """Конвертация DOCX в PDF"""
     file = request.files.get('file')
     if file and file.filename.lower().endswith(('.docx', '.doc')):
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -53,8 +84,10 @@ def convert():
                 os.remove(input_path)
     return jsonify({'success': False, 'error': 'Nieprawidłowy plik'}), 400
 
+
 @app.route('/download/<filename>')
 def download_file(filename):
+    """Скачивание сконвертированного PDF"""
     file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
     if os.path.exists(file_path):
         return send_file(
@@ -65,8 +98,10 @@ def download_file(filename):
         )
     return "Plik nie istnieje", 404
 
+
 @app.route('/premium', methods=['POST'])
 def premium():
+    """Обработка заказа Premium шаблонов CV"""
     try:
         name = request.form.get('name', 'Anonim')
         email = request.form.get('email', '')
@@ -116,9 +151,12 @@ def premium():
         traceback.print_exc()
         return jsonify({'success': False, 'error': f"Błąd serwera: {str(e)[:100]}"}), 500
 
+
 @app.route('/health')
 def health():
+    """Health check для мониторинга"""
     return "OK", 200
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
