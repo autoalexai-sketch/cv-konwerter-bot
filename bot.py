@@ -116,11 +116,11 @@ TEXTS = {
 
 def main_keyboard(lang='pl'):
     builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text="🔒 Polityka prywatności", callback_data="privacy"))
+    builder.add(InlineKeyboardButton(text="🔒 Polityka prywatności", url="https://cv-konwerter-web-docker.onrender.com/polityka-prywatnosci"))
+    builder.add(InlineKeyboardButton(text="📋 Regulamin", url="https://cv-konwerter-web-docker.onrender.com/regulamin"))
+    builder.add(InlineKeyboardButton(text="🍪 Polityka cookies", url="https://cv-konwerter-web-docker.onrender.com/polityka-cookies"))
+    builder.add(InlineKeyboardButton(text="💎 Zasady subskrypcji", url="https://cv-konwerter-web-docker.onrender.com/zasady-subskrypcji"))
     builder.add(InlineKeyboardButton(text="📧 Support 24h", callback_data="support"))
-    builder.add(InlineKeyboardButton(text="💎 Premium 9,99zł", callback_data="premium"))
-    builder.add(InlineKeyboardButton(text="💳 Przelewy24", callback_data="przelew24"))
-    builder.add(InlineKeyboardButton(text="📊 Statystyki", callback_data="stats"))
     builder.adjust(1)
     return builder.as_markup()
 
