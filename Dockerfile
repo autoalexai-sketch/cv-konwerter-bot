@@ -14,3 +14,12 @@ RUN apt-get update && \
 # Копирование requirements.txt и установка Python зависимостей
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Копирование всех файлов проекта
+COPY . .
+
+# Переменные окружения будут переданы через Fly.io secrets
+# НЕ копируем .env файл - используем secrets от Fly.io
+
+# Запуск бота
+CMD ["python", "bot.py"]
