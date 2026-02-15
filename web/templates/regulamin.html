@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regulamin - CV Konwerter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <nav class="gradient-bg shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center">
+                        <i class="fas fa-file-pdf text-white text-3xl mr-3"></i>
+                        <span class="text-white text-2xl font-bold">CV Konwerter</span>
+                    </a>
+                </div>
+                <a href="/" class="text-white hover:text-gray-200">← Powrót</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="max-w-4xl mx-auto px-4 py-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-8">📋 Regulamin Serwisu</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-8 space-y-6">
+            <p class="text-sm text-gray-500">Ostatnia aktualizacja: 14 lutego 2026</p>
+            <p class="text-gray-700">Niniejszy Regulamin określa zasady korzystania z serwisu <strong>CV Konwerter</strong> dostępnego pod adresem <a href="https://cv-konwerter-web-docker.onrender.com" class="text-purple-600 hover:underline">cv-konwerter-web-docker.onrender.com</a> oraz Telegram bota <strong>@cv_konwerter_bot</strong>.</p>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§1. Definicje</h2>
+                <div class="space-y-2 text-gray-700">
+                    <p><strong>1.1 Serwis</strong> - strona internetowa oraz bot Telegram umożliwiające konwersję plików .docx do formatu PDF.</p>
+                    <p><strong>1.2 Usługodawca</strong> - JDG - Luxeclean, ul. Kazimierza Pużaka 6, 31-316 Kraków, Polska.</p>
+                    <p><strong>1.3 Użytkownik</strong> - każda osoba fizyczna lub prawna korzystająca z Serwisu.</p>
+                    <p><strong>1.4 Konwersja</strong> - proces przekształcania pliku .docx/.doc do formatu PDF.</p>
+                    <p><strong>1.5 Premium</strong> - płatna usługa oferująca dostęp do profesjonalnych szablonów CV i listu motywacyjnego.</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§2. Postanowienia ogólne</h2>
+                <div class="space-y-2 text-gray-700">
+                    <p><strong>2.1</strong> Korzystanie z Serwisu oznacza akceptację niniejszego Regulaminu.</p>
+                    <p><strong>2.2</strong> Serwis jest dostępny 24/7, z zastrzeżeniem przerw technicznych.</p>
+                    <p><strong>2.3</strong> Korzystanie z Serwisu nie wymaga rejestracji.</p>
+                    <p><strong>2.4</strong> Serwis jest przeznaczony dla użytkowników w wieku 18 lat i więcej.</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§3. Zasady korzystania z Serwisu</h2>
+                <div class="space-y-3">
+                    <div class="border-l-4 border-purple-600 pl-4">
+                        <h3 class="font-semibold text-gray-900 mb-2">3.1 Użytkownik ma prawo do:</h3>
+                        <ul class="list-disc list-inside text-gray-700">
+                            <li>Konwersji plików .docx/.doc do PDF</li>
+                            <li>Maksymalnie 5 konwersji na godzinę (rate limiting)</li>
+                            <li>Przesyłania plików do 15 MB</li>
+                            <li>Zakupu usługi Premium</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-l-4 border-red-600 pl-4">
+                        <h3 class="font-semibold text-gray-900 mb-2">3.2 Użytkownik zobowiązuje się do:</h3>
+                        <ul class="list-disc list-inside text-gray-700">
+                            <li>Nie przesyłać plików zawierających treści nielegalne, pornograficzne, obraźliwe lub naruszające prawa osób trzecich</li>
+                            <li>Nie przesyłać plików zawierających złośliwe oprogramowanie (malware, wirusy)</li>
+                            <li>Nie nadużywać Serwisu (ataki DDoS, spam)</li>
+                            <li>Nie udostępniać dostępu Premium osobom trzecim</li>
+                            <li>Korzystać z Serwisu zgodnie z polskim prawem</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§4. Ograniczenia techniczne</h2>
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-purple-100">
+                            <th class="border p-3 text-left">Ograniczenie</th>
+                            <th class="border p-3 text-left">Wartość</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border p-3">Maksymalny rozmiar pliku</td>
+                            <td class="border p-3"><strong>15 MB</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="border p-3">Konwersje na godzinę</td>
+                            <td class="border p-3"><strong>5 konwersji</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="border p-3">Czas przechowywania plików</td>
+                            <td class="border p-3"><strong>24 godziny</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="border p-3">Obsługiwane formaty</td>
+                            <td class="border p-3"><strong>.docx, .doc</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="border p-3">Czas konwersji</td>
+                            <td class="border p-3"><strong>30-60 sekund</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§5. Odpowiedzialność Usługodawcy</h2>
+                <div class="space-y-3">
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                        <p class="font-semibold text-gray-900 mb-2">5.1 Usługodawca dołoży wszelkich starań, aby Serwis działał poprawnie, ale:</p>
+                        <ul class="list-disc list-inside text-gray-700">
+                            <li>Nie gwarantuje 100% dostępności Serwisu</li>
+                            <li>Nie ponosi odpowiedzialności za czasową niedostępność wynikającą z konserwacji lub awarii</li>
+                            <li>Nie odpowiada za błędy konwersji wynikające z uszkodzonych plików źródłowych</li>
+                        </ul>
+                    </div>
+                    
+                    <p class="text-gray-700"><strong>5.2</strong> Usługodawca nie ponosi odpowiedzialności za:</p>
+                    <ul class="list-disc list-inside text-gray-700">
+                        <li>Utratę danych wynikającą z nieprawidłowego użycia Serwisu</li>
+                        <li>Treść przesyłanych przez Użytkowników plików</li>
+                        <li>Szkody pośrednie (utracone korzyści, straty biznesowe)</li>
+                    </ul>
+                    
+                    <p class="text-gray-700"><strong>5.3</strong> Maksymalna odpowiedzialność Usługodawcy ograniczona jest do wysokości zapłaconej ceny (w przypadku Premium).</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§6. Prawa autorskie</h2>
+                <div class="space-y-2 text-gray-700">
+                    <p><strong>6.1</strong> Użytkownik oświadcza, że posiada prawa do przesyłanych plików lub ma zgodę właściciela praw autorskich.</p>
+                    <p><strong>6.2</strong> Usługodawca nie nabywa żadnych praw do przesłanych plików.</p>
+                    <p><strong>6.3</strong> Użytkownik ponosi pełną odpowiedzialność za naruszenie praw autorskich osób trzecich.</p>
+                    <p><strong>6.4</strong> Serwis, logo, szablony Premium są własnością Usługodawcy i objęte ochroną prawa autorskiego.</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§7. Reklamacje</h2>
+                <div class="bg-purple-50 p-4 rounded-lg space-y-3 text-gray-700">
+                    <p><strong>7.1</strong> Reklamacje można składać emailem: <a href="mailto:cvkonwerterpoland@gmail.com" class="text-purple-600 hover:underline">cvkonwerterpoland@gmail.com</a></p>
+                    <p><strong>7.2</strong> Reklamacja powinna zawierać:</p>
+                    <ul class="list-disc list-inside ml-4">
+                        <li>Dane kontaktowe</li>
+                        <li>Opis problemu</li>
+                        <li>Datę i godzinę zdarzenia</li>
+                        <li>W przypadku Premium - numer transakcji</li>
+                    </ul>
+                    <p><strong>7.3</strong> Usługodawca rozpatrzy reklamację w ciągu <strong>14 dni roboczych</strong>.</p>
+                    <p><strong>7.4</strong> Odpowiedź zostanie wysłana na adres email podany w reklamacji.</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§8. Rozwiązanie sporów</h2>
+                <div class="space-y-2 text-gray-700">
+                    <p><strong>8.1</strong> Strony będą dążyć do polubownego rozwiązania sporu.</p>
+                    <p><strong>8.2</strong> W przypadku braku porozumienia, spory będą rozpatrywane przez sąd właściwy dla siedziby Usługodawcy (Kraków).</p>
+                    <p><strong>8.3</strong> Do umowy zastosowanie ma prawo polskie.</p>
+                    <p><strong>8.4</strong> Konsument może skorzystać z pozasądowych sposobów rozpatrywania reklamacji i dochodzenia roszczeń (np. mediacja, ODR).</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§9. Zawieszenie i zakończenie dostępu</h2>
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 space-y-2 text-gray-700">
+                    <p><strong>9.1</strong> Usługodawca może zawiesić lub zablokować dostęp Użytkownika w przypadku:</p>
+                    <ul class="list-disc list-inside ml-4">
+                        <li>Naruszenia Regulaminu</li>
+                        <li>Próby ataku na Serwis</li>
+                        <li>Przesyłania nielegalnych treści</li>
+                        <li>Nadużywania rate limitów</li>
+                    </ul>
+                    <p><strong>9.2</strong> Blokada może nastąpić bez uprzedzenia w przypadku rażącego naruszenia.</p>
+                    <p><strong>9.3</strong> Użytkownik ma prawo do wyjaśnień poprzez kontakt email.</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§10. Zmiany Regulaminu</h2>
+                <div class="space-y-2 text-gray-700">
+                    <p><strong>10.1</strong> Usługodawca zastrzega sobie prawo do zmiany Regulaminu.</p>
+                    <p><strong>10.2</strong> O zmianach Użytkownicy zostaną powiadomieni poprzez:</p>
+                    <ul class="list-disc list-inside ml-4">
+                        <li>Komunikat na stronie głównej (co najmniej 7 dni przed wejściem w życie)</li>
+                        <li>Email (w przypadku Premium)</li>
+                    </ul>
+                    <p><strong>10.3</strong> Korzystanie z Serwisu po wejściu w życie zmian oznacza akceptację nowego Regulaminu.</p>
+                    <p><strong>10.4</strong> W przypadku braku akceptacji, Użytkownik powinien zaprzestać korzystania z Serwisu.</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§11. Postanowienia końcowe</h2>
+                <div class="space-y-2 text-gray-700">
+                    <p><strong>11.1</strong> Regulamin wchodzi w życie z dniem 14 lutego 2026 roku.</p>
+                    <p><strong>11.2</strong> W sprawach nieuregulowanych stosuje się przepisy:</p>
+                    <ul class="list-disc list-inside ml-4">
+                        <li>Kodeksu cywilnego</li>
+                        <li>Ustawy o świadczeniu usług drogą elektroniczną</li>
+                        <li>Ustawy o prawach konsumenta</li>
+                        <li>RODO (w zakresie danych osobowych)</li>
+                    </ul>
+                    <p><strong>11.3</strong> Jeśli którekolwiek postanowienie Regulaminu okaże się nieważne, pozostałe postanowienia pozostają w mocy.</p>
+                    <p><strong>11.4</strong> Regulamin jest dostępny bezpłatnie na stronie Serwisu w każdym czasie.</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">§12. Kontakt</h2>
+                <div class="bg-purple-50 p-6 rounded-lg space-y-3">
+                    <p class="text-gray-700"><strong>W razie pytań dotyczących Regulaminu, prosimy o kontakt:</strong></p>
+                    <div class="space-y-2 text-gray-700">
+                        <p>📧 <strong>Email:</strong> <a href="mailto:cvkonwerterpoland@gmail.com" class="text-purple-600 hover:underline">cvkonwerterpoland@gmail.com</a></p>
+                        <p>💬 <strong>Telegram:</strong> <a href="https://t.me/autoalex_ai" target="_blank" class="text-purple-600 hover:underline">@autoalex_ai</a></p>
+                        <p>📍 <strong>Adres:</strong><br>
+                        JDG - Luxeclean<br>
+                        ul. Kazimierza Pużaka 6<br>
+                        31-316 Kraków, Polska</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="bg-green-50 border-2 border-green-500 rounded-lg p-6 mt-8">
+                <p class="text-center text-gray-700">
+                    <strong>✅ Dziękujemy za korzystanie z CV Konwerter!</strong><br>
+                    Regulamin dostosowany do polskiego prawa i RODO.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="gradient-bg py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center text-white">
+            <p>&copy; 2026 CV Konwerter. Wszystkie prawa zastrzeżone.</p>
+            <p class="text-sm mt-2 opacity-75">
+                <a href="/" class="hover:underline">Strona główna</a> |
+                <a href="/polityka-prywatnosci" class="hover:underline">Polityka prywatności</a> |
+                <a href="/regulamin" class="hover:underline">Regulamin</a> |
+                <a href="/polityka-cookies" class="hover:underline">Polityka cookies</a> |
+                <a href="/zasady-subskrypcji" class="hover:underline">Zasady subskrypcji</a>
+            </p>
+        </div>
+    </footer>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>
