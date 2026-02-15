@@ -1,0 +1,25 @@
+app = "cv-konwerter-web"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile.web"
+
+[env]
+  PORT = "10000"
+
+[[services]]
+  internal_port = 10000
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[vm]
+  memory = '512mb'
+  cpus = 1
