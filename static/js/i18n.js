@@ -35,7 +35,7 @@ const translations = {
         'telegram.title': '📱 Używasz Telegram?',
         'telegram.subtitle': 'Wyślij CV bezpośrednio do naszego bota!',
         'telegram.button': 'Otwórz Telegram Bot',
-        'footer.copyright': '&copy; 2026 CV Konwerter. Wszystkie prawa zastrzeżone.',
+        'footer.copyright': '© 2026 CV Konwerter. Wszystkie prawa zastrzeżone.',
         'footer.privacy': 'Twoje pliki są automatycznie usuwane po <strong>24 godzinach</strong> zgodnie z RODO.',
         'rodo.consent': 'Potwierdzam, że mam prawo do udostępnienia tego dokumentu i akceptuję <a href="/polityka-prywatnosci" target="_blank" style="color: #4a6cf7;">politykę prywatności</a> zgodnie z RODO.',
         'form.step1.title': ' Dane osobowe',
@@ -85,7 +85,7 @@ const translations = {
         'telegram.title': '📱 Using Telegram?',
         'telegram.subtitle': 'Send CV directly to our bot!',
         'telegram.button': 'Open Telegram Bot',
-        'footer.copyright': '&copy; 2026 CV Konwerter. All rights reserved.',
+        'footer.copyright': '© 2026 CV Konwerter. All rights reserved.',
         'footer.privacy': 'Your files are automatically deleted after <strong>24 hours</strong> in accordance with GDPR.',
         'rodo.consent': 'I confirm that I have the right to share this document and accept the <a href="/privacy-policy" target="_blank" style="color: #4a6cf7;">privacy policy</a> in accordance with GDPR.',
         'form.step1.title': ' Personal data',
@@ -135,7 +135,7 @@ const translations = {
         'telegram.title': '📱 Користуєтесь Telegram?',
         'telegram.subtitle': 'Надішліть CV безпосередньо до нашого бота!',
         'telegram.button': 'Відкрити Telegram Бот',
-        'footer.copyright': '&copy; 2026 CV Konwerter. Всі права захищені.',
+        'footer.copyright': '© 2026 CV Konwerter. Всі права захищені.',
         'footer.privacy': 'Ваші файли автоматично видаляються через <strong>24 години</strong> відповідно до GDPR.',
         'rodo.consent': 'Підтверджую, що маю право надати цей документ і приймаю <a href="/polityka-prywatnosci" target="_blank" style="color: #4a6cf7;">політику конфіденційності</a> відповідно до GDPR.',
         'form.step1.title': ' Особисті дані',
@@ -167,8 +167,8 @@ function setLanguage(lang) {
         const key = el.getAttribute('data-i18n');
         const translation = getTranslation(key, lang);
         
-        // Если есть вложенные ссылки (<a>), сохраняем их
-        if (translation.includes('<a ')) {
+        // Если есть вложенные ссылки (<a>) или HTML теги, используем innerHTML
+        if (translation.includes('<a ') || translation.includes('<strong>')) {
             el.innerHTML = translation;
         } else {
             el.textContent = translation;
