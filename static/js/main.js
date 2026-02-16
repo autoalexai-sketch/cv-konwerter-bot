@@ -75,7 +75,7 @@ function handleFiles(files) {
     }
 }
 
-// Handle form submission (БЕЗ АВТО-ЗАГРУЗКИ!)
+// Handle form submission
 uploadForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -117,22 +117,20 @@ uploadForm.addEventListener('submit', async function(e) {
         clearInterval(progressInterval);
         progressFill.style.width = '100%';
         
-if (response.ok) {
-    const data = await response.json();
-    
-    if (data.success && data.download_url) {
-        // Устанавливаем ссылку на скачивание
-        downloadLink.href = data.download_url;
-        downloadLink.download = data.filename;
-        
-        // Показываем кнопку скачивания
-        result.classList.remove('hidden');
-        progressBar.classList.add('hidden');
-    } else {
-        showError(data.error || 'Błąd konwersji');
-    }
-}
+        if (response.ok) {
+            const data = await response.json();
             
+            if (data.success && data.download_url) {
+                // Устанавливаем ссылку на скачивание
+                downloadLink.href = data.download_url;
+                downloadLink.download = data.filename;
+                
+                // Показываем кнопку скачивания
+                result.classList.remove('hidden');
+                progressBar.classList.add('hidden');
+            } else {
+                showError(data.error || 'Błąd konwersji');
+            }
         } else {
             const errorData = await response.json();
             showError(errorData.error || 'Błąd konwersji');
@@ -154,7 +152,7 @@ function showError(message) {
     convertBtn.innerHTML = `<i class="fas fa-magic mr-2"></i> Konwertuj do PDF`;
 }
 
-// ✅ ИСПРАВЛЕННЫЙ ОБРАБОТЧИК НАВИГАЦИИ (без ошибки blob:)
+// Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         const href = this.getAttribute('href');
