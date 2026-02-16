@@ -12,6 +12,8 @@ except ImportError:
     print("⚠️ Email service not available")
 
 app = Flask(__name__, template_folder='web/templates')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
 app.config['OUTPUT_FOLDER'] = '/tmp/outputs'
 app.config['TEMPLATES_FOLDER'] = 'templates_cv'
