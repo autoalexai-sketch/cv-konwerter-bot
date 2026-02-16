@@ -60,9 +60,14 @@ def convert():
     file = request.files.get('file')
     if file and file.filename.lower().endswith(('.docx', '.doc')):
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        input_path = os.path.join(app.config['UPLOAD_FOLDER'], f'{timestamp}_{file.filename}')
+        
+        # Очищаем имя файла от спецсимволов
+        safe_filename = file.filename.replace(' ', '_').replace('(', '').replace(')', '')
+        input_path = os.path.join(app.config['UPLOAD_FOLDER'], f'{timestamp}_{safe_filename}')
+        
         file.save(input_path)
         try:
+            # Конвертация
             subprocess.run([
                 'soffice', '--headless', 
                 '-env:UserInstallation=file:///tmp/.libreoffice', 
@@ -71,35 +76,33 @@ def convert():
                 input_path
             ], check=True, timeout=30)
             
-            output_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{timestamp}_{os.path.splitext(file.filename)[0]}.pdf')
-            output_filename = f"cv_{timestamp}.pdf"
+            # LibreOffice создаёт файл с именем без расширения + .pdf
+            base_name = os.path.splitext(os.path.basename(input_path))[0]
+            expected_pdf = os.path.join(app.config['OUTPUT_FOLDER'], f'{base_name}.pdf')
+            
+            # Проверяем что файл создан
+            if not os.path.exists(expected_pdf):
+                # Ищем любой PDF в папке с таким timestamp
+                pdf_files = [f for f in os.listdir(app.config['OUTPUT_FOLDER']) 
+                            if f.startswith(timestamp) and f.endswith('.pdf')]
+                if pdf_files:
+                    expected_pdf = os.path.join(app.config['OUTPUT_FOLDER'], pdf_files[0])
+                    base_name = os.path.splitext(pdf_files[0])[0]
+                else:
+                    return jsonify({'success': False, 'error': 'Nie znaleziono pliku PDF'}), 500
             
             return jsonify({
                 'success': True,
-                'filename': output_filename,
-                'download_url': f'/download/{timestamp}_{os.path.splitext(file.filename)[0]}.pdf'
+                'filename': f"cv_{timestamp}.pdf",
+                'download_url': f'/download/{base_name}.pdf'
             })
+            
         except Exception as e:
             return jsonify({'success': False, 'error': f"Błąd konwersji: {str(e)[:100]}"}), 500
         finally:
             if os.path.exists(input_path):
                 os.remove(input_path)
     return jsonify({'success': False, 'error': 'Nieprawidłowy plik'}), 400
-
-
-@app.route('/download/<filename>')
-def download_file(filename):
-    """Скачивание сконвертированного PDF"""
-    file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
-    if os.path.exists(file_path):
-        return send_file(
-            file_path,
-            as_attachment=True,
-            download_name=f"cv_{filename}",
-            mimetype="application/pdf"
-        )
-    return "Plik nie istnieje", 404
-
 
 @app.route('/premium', methods=['POST'])
 def premium():
