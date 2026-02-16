@@ -117,20 +117,21 @@ uploadForm.addEventListener('submit', async function(e) {
         clearInterval(progressInterval);
         progressFill.style.width = '100%';
         
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const pdfFilename = file.name.replace(/\.(doc|docx)$/i, '.pdf');
-            
-            // ✅ ТОЛЬКО УСТАНАВЛИВАЕМ ССЫЛКУ (НЕ АВТО-ЗАГРУЗКА!)
-            downloadLink.href = url;
-            downloadLink.download = pdfFilename;
-            
-            // ✅ ПОКАЗЫВАЕМ КНОПКУ
-            result.classList.remove('hidden');
-            progressBar.classList.add('hidden');
-            
-            // ❌ НЕТ КОДА АВТО-ЗАГРУЗКИ!
+if (response.ok) {
+    const data = await response.json();
+    
+    if (data.success && data.download_url) {
+        // Устанавливаем ссылку на скачивание
+        downloadLink.href = data.download_url;
+        downloadLink.download = data.filename;
+        
+        // Показываем кнопку скачивания
+        result.classList.remove('hidden');
+        progressBar.classList.add('hidden');
+    } else {
+        showError(data.error || 'Błąd konwersji');
+    }
+}
             
         } else {
             const errorData = await response.json();
