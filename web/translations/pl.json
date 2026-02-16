@@ -27,49 +27,29 @@
       "maxSize": "Maksymalny rozmiar: 15 MB"
     },
     "button": "Konwertuj do PDF",
-    "converting": "Konwersja...",
     "success": {
       "title": "Gotowe! 🎉",
       "download": "Pobierz PDF"
     },
     "error": {
-      "title": "Wystąpił błąd",
-      "noFile": "Proszę wybrać plik",
-      "wrongFormat": "Dozwolone tylko pliki .doc i .docx",
-      "tooLarge": "Plik jest za duży (max 15 MB)",
-      "conversionFailed": "Nie udało się skonwertować pliku",
-      "serverError": "Błąd serwera. Spróbuj ponownie."
+      "title": "Wystąpił błąd"
     }
+  },
+  "rodo": {
+    "consent": "Potwierdzam, że mam prawo do udostępnienia tego dokumentu i akceptuję politykę prywatności zgodnie z RODO."
   },
   "premium": {
     "title": "💎 Pakiet Premium",
     "subtitle": "Profesjonalne CV + List motywacyjny za 9,99 zł",
     "free": {
       "title": "🆓 Wersja darmowa",
-      "features": [
-        "✅ Konwersja DOCX → PDF",
-        "✅ Do 3 plików dziennie",
-        "✅ Szybka konwersja",
-        "✅ Podstawowe funkcje"
-      ],
       "button": "Używasz teraz"
     },
     "paid": {
       "title": "💎 Premium",
       "badge": "Popularne",
-      "price": "9,99 zł",
+      "price": "9.99 zł",
       "priceNote": "jednorazowo",
-      "features": [
-        "✅ Wszystko z wersji darmowej",
-        "✅ 4 profesjonalne szablony CV",
-        "✅ 5 schematów kolorystycznych",
-        "✅ Dodanie zdjęcia (opcjonalnie)",
-        "✅ List motywacyjny w zestawie",
-        "✅ Dostarczenie na email (DOCX)",
-        "✅ Edytowalne pliki",
-        "✅ Bezlimitowe poprawki",
-        "✅ Wsparcie 24/7"
-      ],
       "button": "Kup Premium (9,99 zł)",
       "payment": "💳 Płatność przez Przelewy24"
     }
