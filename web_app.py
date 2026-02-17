@@ -18,6 +18,25 @@ app.config['TEMPLATES_FOLDER'] = 'templates_cv'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
+@app.route('/sitemap.xml')
+def sitemap():
+    from flask import Response
+    content = '''<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://cvkonwerter.pl/</loc><priority>1.0</priority></url>
+  <url><loc>https://cvkonwerter.pl/polityka-prywatnosci</loc><priority>0.3</priority></url>
+  <url><loc>https://cvkonwerter.pl/regulamin</loc><priority>0.3</priority></url>
+  <url><loc>https://cvkonwerter.pl/polityka-cookies</loc><priority>0.2</priority></url>
+  <url><loc>https://cvkonwerter.pl/zasady-subskrypcji</loc><priority>0.3</priority></url>
+</urlset>'''
+    return Response(content, mimetype='application/xml')
+
+@app.route('/robots.txt')
+def robots():
+    from flask import Response
+    content = 'User-agent: *\nAllow: /\nDisallow: /download/\nDisallow: /convert\nSitemap: https://cvkonwerter.pl/sitemap.xml'
+    return Response(content, mimetype='text/plain')
+
 @app.route('/')
 def index():
     """Главная страница"""
