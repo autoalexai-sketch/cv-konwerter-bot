@@ -4,7 +4,7 @@ services:
     env: python
     region: frankfurt
     plan: free
-    buildCommand: "pip install -r requirements.txt && apt-get update && apt-get install -y libreoffice-writer fonts-liberation"
+    buildCommand: "pip install --upgrade 'pip>=26.2.2' && pip install -r requirements.txt && apt-get update && apt-get install -y libreoffice-writer fonts-liberation"
     startCommand: "python web_app.py"  # ← КРИТИЧЕСКИ ВАЖНО: именно web_app.py!
     envVars:
       - key: PYTHON_VERSION
