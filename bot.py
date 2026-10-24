@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-logger.info(f"DEBUG: TOKEN loaded = {TOKEN[:10]}..." if TOKEN else "DEBUG: TOKEN is None!")
+logger.info("TELEGRAM_BOT_TOKEN loaded" if TOKEN else "TELEGRAM_BOT_TOKEN is missing")
 
 if not TOKEN:
     logger.error("❌ TELEGRAM_BOT_TOKEN не найден!")
