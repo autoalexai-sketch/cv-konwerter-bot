@@ -12,8 +12,10 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Копирование requirements.txt и установка Python зависимостей
+# pip>=26.2.2: vendored certifi без доверия к eMudhra (2026-10)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade "pip>=26.2.2" && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Копирование всех файлов проекта
 COPY . .

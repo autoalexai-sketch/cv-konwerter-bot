@@ -1,5 +1,5 @@
 # Используем легкий образ Python
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Устанавливаем системные зависимости для LibreOffice и конвертации
 RUN apt-get update && apt-get install -y \
@@ -20,7 +20,9 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Устанавливаем библиотеки Python
-RUN pip install --no-cache-dir -r requirements.txt
+# pip>=26.2.2: vendored certifi без доверия к eMudhra (2026-10)
+RUN pip install --no-cache-dir --upgrade "pip>=26.2.2" && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Копируем все файлы проекта в контейнер
 COPY . .
